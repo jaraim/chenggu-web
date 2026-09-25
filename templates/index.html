@@ -1100,12 +1100,15 @@ async function doLucky() {
     el.innerHTML = `<div class="title">${r.date} · 当日吉数</div>
 <div style="background:#faf6ee;border-radius:8px;padding:15px;text-align:center">
   <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）</div>
-  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生扶：<b>${r.sheng_wo}</b>　克我：<b style="color:#e74c3c">${r.ke_wo}</b></div>
+  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生肖五行：<b style="color:#8a6d4b">${r.shengxiao_wuxing}</b>　生扶：<b>${r.sheng_wo}</b>　克我：<b style="color:#e74c3c">${r.ke_wo}</b></div>
+  <div style="font-size:12px;color:#999;margin-top:5px">吉数来源：日主${r.day_wuxing}（比和）+ ${r.sheng_wo}（生扶）+ 生肖${r.shengxiao_wuxing}（比和）</div>
 </div>
 <span class="section">最佳吉数 TOP ${r.best.length}</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.ji_numbers.map(n=>`<span style="display:inline-block;background:#f0e8d8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#5a3d2b">${n}</span>`).join('')}</div>
+<span class="section">生肖吉数（${r.shengxiao}属${r.shengxiao_wuxing}）</span>
+<div style="font-size:15px;margin:8px 0;line-height:1.9">${r.sx_ji.map(n=>`<span style="display:inline-block;background:#e8f0e8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#2e8b57">${n}</span>`).join('')}</div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
 <span class="section">当日提示</span>

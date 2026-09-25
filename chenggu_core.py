@@ -1681,7 +1681,7 @@ NUMBER_LUCK = {
 def lucky_numbers(year, month, day):
     """
     输入年月日，返回当天最佳吉数（1-49）。
-    原理：当天日柱干支 → 日主五行 → 比和+生扶为吉，克我为忌。
+    原理：当天日柱干支 → 日主五行 + 生肖五行 → 比和+生扶为吉，克我为忌。
     """
     import datetime
     try:
@@ -1695,21 +1695,26 @@ def lucky_numbers(year, month, day):
     day_wuxing = TIANGAN_WUXING[day_gan]
     shengxiao = SHENGXIAO_NAME[day_zhi]
 
+    # 生肖五行（地支五行）
+    shengxiao_wuxing = DIZHI_WUXING[day_zhi]
+
     # 生我者（印）和克我者（官杀）
     sheng_wo = [w for w in WUXING_ORDER if WUXING_SHENG[w] == day_wuxing]
     ke_wo = [w for w in WUXING_ORDER if WUXING_KE[w] == day_wuxing]
     sheng_wo = sheng_wo[0] if sheng_wo else day_wuxing
     ke_wo = ke_wo[0] if ke_wo else day_wuxing
 
-    # 吉数：比和（日主五行）+ 生扶（印五行）
+    # 吉数：日主比和 + 日主生扶（印）+ 生肖五行（比和）
     groups = number_groups()
-    zhu_ji = groups[day_wuxing]      # 主吉数（比和）
-    ci_ji = groups[sheng_wo]         # 次吉数（生扶）
-    ji_numbers = zhu_ji + ci_ji
-    ji_numbers = sorted(ji_numbers)
+    zhu_ji = groups[day_wuxing]           # 主吉数（日主比和）
+    ci_ji = groups[sheng_wo]              # 次吉数（日主生扶）
+    sx_ji = groups[shengxiao_wuxing]      # 生肖吉数（生肖五行）
+    ji_numbers = sorted(set(zhu_ji + ci_ji + sx_ji))
 
-    # 忌数：克我者
-    ji_wuxing = groups[ke_wo]
+    # 忌数：克日主者 + 克生肖者
+    ke_sx = [w for w in WUXING_ORDER if WUXING_KE[w] == shengxiao_wuxing]
+    ke_sx = ke_sx[0] if ke_sx else shengxiao_wuxing
+    ji_wuxing = list(set(groups[ke_wo] + groups[ke_sx]))
 
     # 最佳吉数TOP：吉数中取寓意好的优先（避开4结尾的谐音忌讳）
     def luck_rank(n):
@@ -1740,19 +1745,21 @@ def lucky_numbers(year, month, day):
     return {
         'date': f'{year}年{month}月{day}日',
         'ganzhi': gz, 'shengxiao': shengxiao,
+        'shengxiao_wuxing': shengxiao_wuxing,
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,
-        'zhu_ji': zhu_ji,           # 主吉数（比和）
-        'ci_ji': ci_ji,             # 次吉数（生扶）
+        'zhu_ji': zhu_ji,           # 主吉数（日主比和）
+        'ci_ji': ci_ji,             # 次吉数（日主生扶）
+        'sx_ji': sx_ji,             # 生肖吉数（生肖五行）
         'ji_numbers': ji_numbers,   # 全部吉数
-        'ji_wuxing': ji_wuxing,     # 忌数（克我）
+        'ji_wuxing': ji_wuxing,     # 忌数（克日主+克生肖）
         'best': best,               # 最佳吉数TOP8
         'groups': groups,           # 1-49五行分组
         'number_luck': NUMBER_LUCK,
         'tips': [
-            f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}',
-            f'比和{day_wuxing}与生扶{sheng_wo}之数为吉，主吉数为：{zhu_ji[0]}-{zhu_ji[-1]}',
+            f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}，生肖五行属{shengxiao_wuxing}',
+            f'比和{day_wuxing}、生扶{sheng_wo}与生肖{shengxiao_wuxing}之数为吉',
             f'克制日主的{ke_wo}属性数字当日宜谨慎使用',
             '以上仅供参考娱乐，不构成任何投注建议',
         ],
