@@ -416,14 +416,29 @@ ${r.reason}
 <div class="name-grid">${r.single_names.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>`;
     if (r.locked) {
       html += `<div class="vip-lock">
-        <h4>VIP专属 · 双字名推荐</h4>
-        <p>双字名方案、三才五格分析、名字寓意详解需开通VIP</p>
-        <button class="btn" onclick="showVipModal()">开通VIP查看双字名</button>
+        <h4>VIP专属 · 高级取名</h4>
+        <p>双字名方案（12个）、三才五格分析、名字寓意详解需开通VIP</p>
+        <button class="btn" onclick="showVipModal()">开通VIP查看高级取名</button>
       </div>`;
     } else {
-      html += `<span class="section">推荐名字（双字名·VIP）</span>
-<div class="name-grid">${r.double_names.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
-（点击名字可复制，仅供参考）`;
+      html += `<span class="section">推荐双字名（共${r.double_names.length}个·VIP）</span>
+<div class="name-grid">${r.double_names.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>`;
+      // 三才五格 + 寓意详解（前6个名字）
+      if (r.name_details && r.name_details.length > 0) {
+        html += '<span class="section">名字详解（三才五格 + 寓意）</span>';
+        r.name_details.forEach(d => {
+          const w = d.wuge;
+          html += `<div style="background:#faf6ee;border-radius:8px;padding:12px;margin:8px 0;border-left:3px solid #c9a96e">
+<div style="font-size:18px;font-weight:bold;color:#5a3d2b;margin-bottom:6px">${d.name}</div>
+<div style="font-size:13px;color:#666;line-height:1.8">
+<b>笔画：</b>${d.surname_stroke}（姓）+ ${d.strokes.join('+')}（名）<br>
+<b>五格：</b>天格${w.tian}(${w.tian_luck}) · 人格${w.ren}(${w.ren_luck}) · 地格${w.di}(${w.di_luck}) · 外格${w.wai}(${w.wai_luck}) · 总格${w.zong}(${w.zong_luck})<br>
+<b>三才：</b>${w.sancai}（${w.sancai_luck}）<br>
+<b>寓意：</b>${d.meanings.join('；')}
+</div></div>`;
+        });
+      }
+      html += '（点击名字可复制，仅供参考）';
     }
     el.innerHTML = html;
   } catch(e) { alert(e.message); }

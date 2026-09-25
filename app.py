@@ -372,13 +372,11 @@ def name_recommend():
     try:
         p = core.palace_bone_weight(y, m, d, h)
         pillars = [p['year_p'], p['month_p'], p['day_p'], p['hour_p']]
-        count, day_master, xi, reason, names = core.recommend_names(surname, gender, pillars)
+        count, day_master, xi, reason, single_names, double_names = core.recommend_names(surname, gender, pillars)
     except Exception as e:
         return jsonify({'error': f'计算出错：{e}'}), 500
     user = current_user()
     vip = is_vip(user)
-    single_names = [n for n in names if len(n) == len(surname) + 1]
-    double_names = [n for n in names if len(n) == len(surname) + 2]
     result = {
         'surname': surname, 'gender': gender,
         'pillars': pillars,
@@ -389,12 +387,18 @@ def name_recommend():
         'single_names': single_names,  # 单字名（免费）
     }
     if vip:
-        # VIP：双字名 + 更多方案
+        # VIP：双字名 + 三才五格 + 寓意详解
         result['double_names'] = double_names
+        # 为每个双字名生成详细分析（取前6个展示详情，其余只列名字）
+        details = []
+        for name in double_names[:6]:
+            given = name[len(surname):]
+            details.append(core.name_detail(surname, given))
+        result['name_details'] = details
         result['locked'] = False
     else:
-        # 非VIP：双字名锁定
         result['double_names'] = []
+        result['name_details'] = []
         result['locked'] = True
     return result
 
