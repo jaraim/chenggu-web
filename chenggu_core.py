@@ -812,3 +812,274 @@ def deep_report(name, gender, solar_y, solar_m, solar_d, hour):
         'personality': personality, 'career': career, 'marriage': marriage,
         'health': health, 'dayun': dayun, 'song': song, 'level': level,
     }
+
+
+# ===================== 六、五行开运指南 =====================
+
+WUXING_COLOR = {
+    '金': ['白色', '金色', '银色'],
+    '木': ['绿色', '青色', '翠色'],
+    '水': ['黑色', '蓝色', '灰色'],
+    '火': ['红色', '紫色', '粉色'],
+    '土': ['黄色', '棕色', '褐色'],
+}
+WUXING_NUMBER = {'金': [4, 9], '木': [3, 8], '水': [1, 6], '火': [2, 7], '土': [5, 0]}
+WUXING_DIRECTION = {'金': '西方', '木': '东方', '水': '北方', '火': '南方', '土': '中央/本地'}
+WUXING_INDUSTRY = {
+    '金': ['金融', '银行', '珠宝', '五金', '机械', '汽车', '法律', '军警'],
+    '木': ['教育', '文化', '出版', '木材', '家具', '园林', '农业', '纺织'],
+    '水': ['贸易', '物流', '水产', '旅游', '传媒', '娱乐', '饮料', '清洁'],
+    '火': ['能源', '电子', '化工', '餐饮', '美容', '广告', '互联网', '照明'],
+    '土': ['房地产', '建筑', '陶瓷', '农业', '仓储', '咨询', '管理', '殡葬'],
+}
+WUXING_JEWELRY = {
+    '金': ['金饰', '银饰', '白水晶', '钻石', '白玉'],
+    '木': ['绿幽灵', '翡翠', '紫檀', '绿发晶', '木质手串'],
+    '水': ['黑曜石', '黑发晶', '海蓝宝', '珍珠', '蓝玉髓'],
+    '火': ['红玛瑙', '石榴石', '红宝石', '紫水晶', '红纹石'],
+    '土': ['黄水晶', '虎眼石', '琥珀', '蜜蜡', '和田玉'],
+}
+
+
+def wuxing_luck_guide(pillars):
+    """基于八字的五行开运指南。"""
+    count, day_master = analyze_wuxing(pillars)
+    dm_wuxing = TIANGAN_WUXING[day_master]
+
+    # 确定喜用神（缺什么补什么，都不缺就补最弱的）
+    missing = [w for w in WUXING_ORDER if count[w] == 0]
+    if missing:
+        xi = missing[0]
+        xi_reason = f"八字缺【{xi}】，以{xi}为喜用神"
+    else:
+        weakest = min(WUXING_ORDER, key=lambda w: count[w])
+        xi = weakest
+        xi_reason = f"八字中【{xi}】最弱，以{xi}为喜用神"
+
+    # 忌神（最多的那个五行）
+    strongest = max(WUXING_ORDER, key=lambda w: count[w])
+
+    return {
+        'day_master': day_master, 'day_master_wuxing': dm_wuxing,
+        'wuxing_count': count,
+        'xi': xi, 'xi_reason': xi_reason,
+        'ji': strongest,
+        'lucky_colors': WUXING_COLOR[xi],
+        'lucky_numbers': WUXING_NUMBER[xi],
+        'lucky_direction': WUXING_DIRECTION[xi],
+        'suitable_industries': WUXING_INDUSTRY[xi],
+        'suitable_jewelry': WUXING_JEWELRY[xi],
+        'avoid_colors': WUXING_COLOR[strongest],
+        'avoid_direction': WUXING_DIRECTION[strongest],
+        'tips': [
+            f"日常穿着多用{WUXING_COLOR[xi][0]}、{WUXING_COLOR[xi][1]}等{xi}系颜色",
+            f"手机号、车牌号多选{WUXING_NUMBER[xi][0]}和{WUXING_NUMBER[xi][1]}",
+            f"办公座位、床头朝向{WUXING_DIRECTION[xi]}为佳",
+            f"适合从事{WUXING_INDUSTRY[xi][0]}、{WUXING_INDUSTRY[xi][1]}等{xi}属性行业",
+            f"可佩戴{WUXING_JEWELRY[xi][0]}、{WUXING_JEWELRY[xi][1]}补运",
+            f"尽量少用{WUXING_COLOR[strongest][0]}等{strongest}系颜色",
+        ],
+    }
+
+
+# ===================== 七、流年运势详解 =====================
+
+TIANGAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸']
+DIZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥']
+
+# 十神关系（日干 vs 流年天干）
+SHISHEN = {
+    # 同我者：比劫
+    ('甲','甲'):'比肩', ('甲','乙'):'劫财', ('乙','甲'):'劫财', ('乙','乙'):'比肩',
+    ('丙','丙'):'比肩', ('丙','丁'):'劫财', ('丁','丙'):'劫财', ('丁','丁'):'比肩',
+    ('戊','戊'):'比肩', ('戊','己'):'劫财', ('己','戊'):'劫财', ('己','己'):'比肩',
+    ('庚','庚'):'比肩', ('庚','辛'):'劫财', ('辛','庚'):'劫财', ('辛','辛'):'比肩',
+    ('壬','壬'):'比肩', ('壬','癸'):'劫财', ('癸','壬'):'劫财', ('癸','癸'):'比肩',
+    # 我生者：食伤
+    ('甲','丙'):'食神', ('甲','丁'):'伤官', ('乙','丙'):'伤官', ('乙','丁'):'食神',
+    ('丙','戊'):'食神', ('丙','己'):'伤官', ('丁','戊'):'伤官', ('丁','己'):'食神',
+    ('戊','庚'):'食神', ('戊','辛'):'伤官', ('己','庚'):'伤官', ('己','辛'):'食神',
+    ('庚','壬'):'食神', ('庚','癸'):'伤官', ('辛','壬'):'伤官', ('辛','癸'):'食神',
+    ('壬','甲'):'食神', ('壬','乙'):'伤官', ('癸','甲'):'伤官', ('癸','乙'):'食神',
+    # 我克者：财星
+    ('甲','戊'):'偏财', ('甲','己'):'正财', ('乙','戊'):'正财', ('乙','己'):'偏财',
+    ('丙','庚'):'偏财', ('丙','辛'):'正财', ('丁','庚'):'正财', ('丁','辛'):'偏财',
+    ('戊','壬'):'偏财', ('戊','癸'):'正财', ('己','壬'):'正财', ('己','癸'):'偏财',
+    ('庚','甲'):'偏财', ('庚','乙'):'正财', ('辛','甲'):'正财', ('辛','乙'):'偏财',
+    ('壬','丙'):'偏财', ('壬','丁'):'正财', ('癸','丙'):'正财', ('癸','丁'):'偏财',
+    # 克我者：官杀
+    ('甲','庚'):'七杀', ('甲','辛'):'正官', ('乙','庚'):'正官', ('乙','辛'):'七杀',
+    ('丙','壬'):'七杀', ('丙','癸'):'正官', ('丁','壬'):'正官', ('丁','癸'):'七杀',
+    ('戊','甲'):'七杀', ('戊','乙'):'正官', ('己','甲'):'正官', ('己','乙'):'七杀',
+    ('庚','丙'):'七杀', ('庚','丁'):'正官', ('辛','丙'):'正官', ('辛','丁'):'七杀',
+    ('壬','戊'):'七杀', ('壬','己'):'正官', ('癸','戊'):'正官', ('癸','己'):'七杀',
+    # 生我者：印星
+    ('甲','壬'):'偏印', ('甲','癸'):'正印', ('乙','壬'):'正印', ('乙','癸'):'偏印',
+    ('丙','甲'):'偏印', ('丙','乙'):'正印', ('丁','甲'):'正印', ('丁','乙'):'偏印',
+    ('戊','丙'):'偏印', ('戊','丁'):'正印', ('己','丙'):'正印', ('己','丁'):'偏印',
+    ('庚','戊'):'偏印', ('庚','己'):'正印', ('辛','戊'):'正印', ('辛','己'):'偏印',
+    ('壬','庚'):'偏印', ('壬','辛'):'正印', ('癸','庚'):'正印', ('癸','辛'):'偏印',
+}
+
+SHISHEN_FORTUNE = {
+    '比肩': ('平稳', '运势平稳，宜守不宜攻，朋友助力但也防破财，合作需谨慎。'),
+    '劫财': ('波动', '财运波动较大，易有破财是非，不宜投资赌博，防小人算计。'),
+    '食神': ('吉祥', '福气丰厚，财源广进，口福佳，适合创作表达、享受生活。'),
+    '伤官': ('变动', '才华显露但易惹是非，感情易有波折，宜低调行事、避免冲动。'),
+    '偏财': ('旺财', '偏财运旺，易有意外之财，适合投资创业，但需防财来财去。'),
+    '正财': ('稳财', '正财运稳，工薪收入增加，适合踏实工作、积累财富。'),
+    '七杀': ('压力', '压力较大，事业竞争激烈，注意健康和安全，宜以柔克刚。'),
+    '正官': ('升迁', '事业运佳，易得贵人提携，有升迁机会，宜积极进取。'),
+    '偏印': ('思索', '思维活跃，适合学习研究，但易有孤独感，注意人际关系。'),
+    '正印': ('贵人', '贵人运旺，学业事业顺利，易得长辈帮助，适合进修提升。'),
+}
+
+# 生肖冲合
+SHENGXIAO_CHONG = {'子':'午','丑':'未','寅':'申','卯':'酉','辰':'戌','巳':'亥',
+                    '午':'子','未':'丑','申':'寅','酉':'卯','戌':'辰','亥':'巳'}
+SHENGXIAO_HE = {'子':'丑','丑':'子','寅':'亥','卯':'戌','辰':'酉','巳':'申',
+                 '午':'未','未':'午','申':'巳','酉':'辰','戌':'卯','亥':'寅'}
+SHENGXIAO_NAME = {'子':'鼠','丑':'牛','寅':'虎','卯':'兔','辰':'龙','巳':'蛇',
+                  '午':'马','未':'羊','申':'猴','酉':'鸡','戌':'狗','亥':'猪'}
+
+
+def liunian_fortune(pillars, gender, birth_year, years=10):
+    """
+    流年运势详解。
+    返回未来 years 年的逐年运势。
+    """
+    day_master = pillars[2][0]
+    birth_zhi = pillars[0][1]  # 年支（生肖）
+
+    # 计算当前年份
+    import datetime
+    current_year = datetime.datetime.now().year
+
+    results = []
+    for i in range(years):
+        year = current_year + i
+        # 计算该年干支
+        gan_idx = (year - 4) % 10
+        zhi_idx = (year - 4) % 12
+        gan = TIANGAN[gan_idx]
+        zhi = DIZHI[zhi_idx]
+        gz = gan + zhi
+
+        # 十神
+        shishen = SHISHEN.get((day_master, gan), '比肩')
+        level, desc = SHISHEN_FORTUNE.get(shishen, ('平稳', '运势平稳。'))
+
+        # 太岁关系
+        if zhi == birth_zhi:
+            taisui = '本命年（值太岁）'
+            taisui_advice = '本命年宜静不宜动，可穿红辟邪，注意健康安全。'
+        elif SHENGXIAO_CHONG.get(birth_zhi) == zhi:
+            taisui = '冲太岁'
+            taisui_advice = '冲太岁年变动大，宜谨慎行事，可拜太岁化解。'
+        elif SHENGXIAO_HE.get(birth_zhi) == zhi:
+            taisui = '合太岁'
+            taisui_advice = '合太岁年贵人运旺，适合合作发展、喜事临门。'
+        else:
+            taisui = '平'
+            taisui_advice = '运势平稳，按部就班即可。'
+
+        # 年龄
+        age = year - birth_year
+
+        results.append({
+            'year': year, 'age': age, 'ganzhi': gz,
+            'shengxiao': SHENGXIAO_NAME[zhi],
+            'shishen': shishen, 'level': level, 'desc': desc,
+            'taisui': taisui, 'taisui_advice': taisui_advice,
+        })
+    return results
+
+
+# ===================== 八、姓名测评 =====================
+
+def name_evaluation(surname, given_name, pillars):
+    """
+    测评已有名字的好坏。
+    返回打分、三才五格分析、与八字契合度、改名建议。
+    """
+    # 1. 三才五格
+    wuge = calc_sancai_wuge(surname, given_name)
+
+    # 2. 名字五行
+    name_wuxing = []
+    for ch in given_name:
+        # 简单判断：偏旁部首或字意
+        if ch in '金木水火土':
+            name_wuxing.append(ch)
+        elif any(c in ch for c in '钅金'):
+            name_wuxing.append('金')
+        elif any(c in ch for c in '木艹禾'):
+            name_wuxing.append('木')
+        elif any(c in ch for c in '氵水雨'):
+            name_wuxing.append('水')
+        elif any(c in ch for c in '火日灬'):
+            name_wuxing.append('火')
+        elif any(c in ch for c in '土山石'):
+            name_wuxing.append('土')
+        else:
+            name_wuxing.append('中性')
+
+    # 3. 八字喜用神
+    count, day_master = analyze_wuxing(pillars)
+    missing = [w for w in WUXING_ORDER if count[w] == 0]
+    xi = missing[0] if missing else min(WUXING_ORDER, key=lambda w: count[w])
+
+    # 4. 名字与八字契合度
+    match_count = sum(1 for w in name_wuxing if w == xi)
+    match_score = int(match_count / len(given_name) * 40) if given_name else 0
+
+    # 5. 五格吉凶得分
+    wuge_score = 0
+    for luck in [wuge['tian_luck'], wuge['ren_luck'], wuge['di_luck'],
+                 wuge['wai_luck'], wuge['zong_luck']]:
+        if luck == '吉': wuge_score += 8
+        elif luck == '半吉': wuge_score += 4
+    wuge_score = int(wuge_score / 40 * 35)
+
+    # 6. 三才吉凶得分
+    sancai_score = 25 if wuge['sancai_luck'] == '吉' else (12 if wuge['sancai_luck'] == '半吉' else 5)
+
+    total_score = match_score + wuge_score + sancai_score
+    total_score = min(100, total_score)
+
+    # 7. 评价
+    if total_score >= 85:
+        grade = '优秀'
+        comment = '此名三才五格俱佳，与八字契合度高，是难得的好名字。'
+    elif total_score >= 70:
+        grade = '良好'
+        comment = '此名整体不错，五格数理较好，与八字基本契合。'
+    elif total_score >= 55:
+        grade = '中等'
+        comment = '此名中规中矩，有个别格数欠佳，可考虑微调。'
+    else:
+        grade = '欠佳'
+        comment = '此名五格数理有较多凶数，与八字契合度低，建议改名。'
+
+    # 8. 改名建议
+    suggestions = []
+    if match_count == 0:
+        suggestions.append(f'名字五行不含喜用神【{xi}】，建议加入{xi}属性的字')
+    if wuge['ren_luck'] == '凶':
+        suggestions.append('人格为凶数，影响主运，建议调整名字笔画')
+    if wuge['sancai_luck'] == '凶':
+        suggestions.append('三才配置为凶，影响整体运势，建议重新搭配笔画')
+    if wuge['zong_luck'] == '凶':
+        suggestions.append('总格为凶数，影响晚年运，建议调整')
+    if not suggestions:
+        suggestions.append('名字各方面较好，无需大改')
+
+    return {
+        'name': surname + given_name, 'surname': surname, 'given': given_name,
+        'total_score': total_score, 'grade': grade, 'comment': comment,
+        'wuge': wuge, 'name_wuxing': name_wuxing,
+        'xi': xi, 'match_score': match_score,
+        'wuge_score': wuge_score, 'sancai_score': sancai_score,
+        'suggestions': suggestions,
+        'meanings': [get_char_meaning(c) for c in given_name],
+    }

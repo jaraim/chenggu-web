@@ -165,6 +165,9 @@
   <div class="tab" onclick="showTab('marriage')">合婚分析</div>
   <div class="tab" onclick="showTab('name')">取名推荐</div>
   <div class="tab" onclick="showTab('deep')">深度报告</div>
+  <div class="tab" onclick="showTab('luck')">五行开运</div>
+  <div class="tab" onclick="showTab('liunian')">流年运势</div>
+  <div class="tab" onclick="showTab('name-eval')">姓名测评</div>
   <div class="tab" onclick="showTab('compare')">多人对比</div>
   <div class="tab" onclick="showTab('history')">历史记录</div>
   <div class="tab" onclick="showTab('jiazi')">六十甲子</div>
@@ -286,6 +289,64 @@
   </div>
 </div>
 
+<!-- ===== 五行开运（VIP） ===== -->
+<div class="panel" id="panel-luck">
+  <div class="card">
+    <h2>五行开运指南 <span class="vip-badge">VIP</span></h2>
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input type="text" id="luck-name" placeholder="选填"></div>
+      <div class="form-group"><label>出生年</label><input type="number" id="luck-year" placeholder="如1990"></div>
+      <div class="form-group"><label>月</label><input type="number" id="luck-month" placeholder="1-12"></div>
+      <div class="form-group"><label>日</label><input type="number" id="luck-day" placeholder="1-31"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="luck-hour"><option value="0">子时(23-1)</option><option value="2">丑时(1-3)</option><option value="4">寅时(3-5)</option><option value="6">卯时(5-7)</option><option value="8">辰时(7-9)</option><option value="10">巳时(9-11)</option><option value="12" selected>午时(11-13)</option><option value="14">未时(13-15)</option><option value="16">申时(15-17)</option><option value="18">酉时(17-19)</option><option value="20">戌时(19-21)</option><option value="22">亥时(21-23)</option></select>
+      </div>
+    </div>
+    <button class="btn" onclick="doLuck()">查看开运指南</button>
+    <div id="luck-result" style="display:none;margin-top:15px"></div>
+  </div>
+</div>
+
+<!-- ===== 流年运势（VIP） ===== -->
+<div class="panel" id="panel-liunian">
+  <div class="card">
+    <h2>流年运势详解 <span class="vip-badge">VIP</span></h2>
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input type="text" id="ln-name" placeholder="选填"></div>
+      <div class="form-group"><label>性别</label><select id="ln-gender"><option>男</option><option>女</option></select></div>
+      <div class="form-group"><label>出生年</label><input type="number" id="ln-year" placeholder="如1990"></div>
+      <div class="form-group"><label>月</label><input type="number" id="ln-month" placeholder="1-12"></div>
+      <div class="form-group"><label>日</label><input type="number" id="ln-day" placeholder="1-31"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="ln-hour"><option value="0">子时(23-1)</option><option value="2">丑时(1-3)</option><option value="4">寅时(3-5)</option><option value="6">卯时(5-7)</option><option value="8">辰时(7-9)</option><option value="10">巳时(9-11)</option><option value="12" selected>午时(11-13)</option><option value="14">未时(13-15)</option><option value="16">申时(15-17)</option><option value="18">酉时(17-19)</option><option value="20">戌时(19-21)</option><option value="22">亥时(21-23)</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>查看年数</label><select id="ln-years"><option value="5">未来5年</option><option value="10" selected>未来10年</option><option value="15">未来15年</option></select></div>
+    <button class="btn" onclick="doLiunian()">查看流年运势</button>
+    <div id="ln-result" style="display:none;margin-top:15px"></div>
+  </div>
+</div>
+
+<!-- ===== 姓名测评（VIP） ===== -->
+<div class="panel" id="panel-name-eval">
+  <div class="card">
+    <h2>姓名测评 <span class="vip-badge">VIP</span></h2>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">输入已有姓名和生辰八字，测评名字好坏、三才五格、与八字契合度。</p>
+    <div class="form-row">
+      <div class="form-group"><label>姓氏</label><input type="text" id="ne-surname" placeholder="如：张"></div>
+      <div class="form-group"><label>名字</label><input type="text" id="ne-given" placeholder="如：伟"></div>
+      <div class="form-group"><label>出生年</label><input type="number" id="ne-year" placeholder="如1990"></div>
+      <div class="form-group"><label>月</label><input type="number" id="ne-month" placeholder="1-12"></div>
+      <div class="form-group"><label>日</label><input type="number" id="ne-day" placeholder="1-31"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="ne-hour"><option value="0">子时(23-1)</option><option value="2">丑时(1-3)</option><option value="4">寅时(3-5)</option><option value="6">卯时(5-7)</option><option value="8">辰时(7-9)</option><option value="10">巳时(9-11)</option><option value="12" selected>午时(11-13)</option><option value="14">未时(13-15)</option><option value="16">申时(15-17)</option><option value="18">酉时(17-19)</option><option value="20">戌时(19-21)</option><option value="22">亥时(21-23)</option></select>
+      </div>
+    </div>
+    <button class="btn" onclick="doNameEval()">开始测评</button>
+    <div id="ne-result" style="display:none;margin-top:15px"></div>
+  </div>
+</div>
+
 <script>
 // ===== 通用 =====
 function showTab(name) {
@@ -383,7 +444,10 @@ ${r.guzhong}
 <span class="section">【综合建议】</span>
 ${r.advice}
 甲方四柱：${r.p1_pillars.join(' ')}
-乙方四柱：${r.p2_pillars.join(' ')}`;
+乙方四柱：${r.p2_pillars.join(' ')}
+<div style="margin-top:15px;text-align:center">
+  <button class="btn" onclick="exportPDF('marriage')" style="background:#8a6d4b">导出PDF合婚报告</button>
+</div>`;
     }
     el.innerHTML = html;
   } catch(e) { alert(e.message); }
@@ -492,7 +556,10 @@ ${r.health}
 ${r.dayun.map(d=>`${d[0]}：${d[1]}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━
 <span class="section">【称骨歌】</span>
-${r.song}`;
+${r.song}
+<div style="margin-top:15px;text-align:center">
+  <button class="btn" onclick="exportPDF('deep')" style="background:#8a6d4b">导出PDF报告</button>
+</div>`;
     }
     el.innerHTML = html;
   } catch(e) { alert(e.message); }
@@ -625,6 +692,117 @@ async function showVipModal() {
   }
 }
 function hideVipModal() { document.getElementById('vip-modal').style.display = 'none'; }
+
+// ===== 五行开运（VIP） =====
+async function doLuck() {
+  const body = {name: val('luck-name'), year: +val('luck-year'), month: +val('luck-month'), day: +val('luck-day'), hour: +val('luck-hour')};
+  if (!body.year) { alert('请填写出生日期'); return; }
+  try {
+    const r = await api('/api/wuxing-luck', 'POST', body);
+    const el = document.getElementById('luck-result');
+    el.style.display = 'block';
+    let wxHtml = '';
+    for (const w of ['金','木','水','火','土']) {
+      const c = r.wuxing_count[w];
+      wxHtml += `<div class="wuxing-bar"><span class="label">${w}</span><div class="bar"><div class="fill" style="width:${c*12.5}%"></div></div><span class="count">${c}</span></div>`;
+    }
+    el.innerHTML = `<div class="title">五行开运指南</div>
+日主：${r.day_master}（${r.day_master_wuxing}）
+${wxHtml}
+<span class="section">喜用神</span>${r.xi_reason}
+<span class="section">幸运颜色</span>${r.lucky_colors.join('、')}
+<span class="section">幸运数字</span>${r.lucky_numbers.join('、')}
+<span class="section">幸运方位</span>${r.lucky_direction}
+<span class="section">适合行业</span>${r.suitable_industries.join('、')}
+<span class="section">推荐饰品</span>${r.suitable_jewelry.join('、')}
+<span class="section">开运建议</span>
+${r.tips.map((t,i)=>`${i+1}. ${t}`).join('\n')}
+<span class="section">需避开</span>颜色：${r.avoid_colors.join('、')}　方位：${r.avoid_direction}`;
+  } catch(e) {
+    if (e.message && e.message.includes('VIP')) { showVipModal(); } else { alert(e.message); }
+  }
+}
+
+// ===== 流年运势（VIP） =====
+async function doLiunian() {
+  const body = {name: val('ln-name'), gender: val('ln-gender'), year: +val('ln-year'), month: +val('ln-month'), day: +val('ln-day'), hour: +val('ln-hour'), years: +val('ln-years')};
+  if (!body.year) { alert('请填写出生日期'); return; }
+  try {
+    const r = await api('/api/liunian', 'POST', body);
+    const el = document.getElementById('ln-result');
+    el.style.display = 'block';
+    let html = '<div class="title">流年运势详解</div><table><tr><th>年份</th><th>年龄</th><th>干支</th><th>生肖</th><th>十神</th><th>运势</th><th>太岁</th></tr>';
+    r.years.forEach(y => {
+      const levelColor = y.level === '吉祥' || y.level === '旺财' || y.level === '稳财' || y.level === '升迁' || y.level === '贵人' ? '#27ae60' : (y.level === '压力' || y.level === '波动' || y.level === '变动' ? '#e74c3c' : '#f39c12');
+      html += `<tr><td>${y.year}</td><td>${y.age}</td><td>${y.ganzhi}</td><td>${y.shengxiao}</td><td>${y.shishen}</td><td style="color:${levelColor};font-weight:bold">${y.level}</td><td>${y.taisui}</td></tr>`;
+    });
+    html += '</table>';
+    r.years.forEach(y => {
+      html += `<div style="background:#faf6ee;padding:10px;border-radius:6px;margin:8px 0;font-size:13px">
+<b>${y.year}年（${y.age}岁·${y.ganzhi}·${y.shishen}）</b>　<span style="color:${y.level==='吉祥'?'#27ae60':'#888'}">${y.level}</span><br>${y.desc}<br><span style="color:#8a6d4b">${y.taisui_advice}</span></div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    if (e.message && e.message.includes('VIP')) { showVipModal(); } else { alert(e.message); }
+  }
+}
+
+// ===== 姓名测评（VIP） =====
+async function doNameEval() {
+  const body = {surname: val('ne-surname'), given: val('ne-given'), year: +val('ne-year'), month: +val('ne-month'), day: +val('ne-day'), hour: +val('ne-hour')};
+  if (!body.surname || !body.given || !body.year) { alert('请填写姓名和出生日期'); return; }
+  try {
+    const r = await api('/api/name-eval', 'POST', body);
+    const el = document.getElementById('ne-result');
+    el.style.display = 'block';
+    const w = r.wuge;
+    const scoreColor = r.total_score >= 70 ? '#27ae60' : (r.total_score >= 55 ? '#f39c12' : '#e74c3c');
+    el.innerHTML = `<div class="title">${r.name} 姓名测评</div>
+<div style="text-align:center;padding:20px">
+  <div style="font-size:48px;font-weight:bold;color:${scoreColor}">${r.total_score}<span style="font-size:20px">分</span></div>
+  <div style="font-size:20px;color:${scoreColor}">${r.grade}</div>
+</div>
+<p style="text-align:center;color:#666">${r.comment}</p>
+<span class="section">三才五格</span>
+天格${w.tian}(${w.tian_luck}) · 人格${w.ren}(${w.ren_luck}) · 地格${w.di}(${w.di_luck}) · 外格${w.wai}(${w.wai_luck}) · 总格${w.zong}(${w.zong_luck})
+三才配置：${w.sancai}（${w.sancai_luck}）
+<span class="section">名字五行</span>${r.name_wuxing.join('、')}（喜用神：${r.xi}）
+<span class="section">名字寓意</span>
+${r.meanings.join('\n')}
+<span class="section">评分明细</span>
+八字契合：${r.match_score}分　五格数理：${r.wuge_score}分　三才配置：${r.sancai_score}分
+<span class="section">建议</span>
+${r.suggestions.map((s,i)=>`${i+1}. ${s}`).join('\n')}`;
+  } catch(e) {
+    if (e.message && e.message.includes('VIP')) { showVipModal(); } else { alert(e.message); }
+  }
+}
+
+// ===== PDF导出 =====
+function exportPDF(type) {
+  const params = new URLSearchParams();
+  params.set('type', type);
+  if (type === 'deep') {
+    params.set('name', val('d-name') || '命主');
+    params.set('gender', val('d-gender'));
+    params.set('year', val('d-year'));
+    params.set('month', val('d-month'));
+    params.set('day', val('d-day'));
+    params.set('hour', val('d-hour'));
+  } else if (type === 'marriage') {
+    params.set('name', val('m1-name') || '甲方');
+    params.set('year', val('m1-year'));
+    params.set('month', val('m1-month'));
+    params.set('day', val('m1-day'));
+    params.set('hour', val('m1-hour'));
+    params.set('name2', val('m2-name') || '乙方');
+    params.set('year2', val('m2-year'));
+    params.set('month2', val('m2-month'));
+    params.set('day2', val('m2-day'));
+    params.set('hour2', val('m2-hour'));
+  }
+  window.open('/report?' + params.toString(), '_blank');
+}
 
 // 初始化
 initCompareRows();

@@ -182,6 +182,15 @@ def admin_page():
     return render_template('admin.html', username=user['username'])
 
 
+@app.route('/report')
+def report_page():
+    """VIP报告页面（用于打印/保存PDF）。"""
+    user = current_user()
+    if not user:
+        return render_template('login.html')
+    return render_template('report.html', username=user['username'])
+
+
 # ===================== 认证 API =====================
 
 @app.route('/api/register', methods=['POST'])
@@ -260,8 +269,16 @@ def calc():
 
     song = (core.MALE_SONGS if gender == '男' else core.FEMALE_SONGS).get(s['total'], '（暂无）')
 
-    # 保存历史
+    # 保存历史（普通用户限20条，VIP无限）
     db = get_db()
+    user = current_user()
+    if not is_vip(user):
+        count = db.execute('SELECT COUNT(*) FROM history WHERE user_id=?', (session['user_id'],)).fetchone()[0]
+        if count >= 20:
+            # 删除最旧的一条
+            oldest = db.execute('SELECT id FROM history WHERE user_id=? ORDER BY id ASC LIMIT 1', (session['user_id'],)).fetchone()
+            if oldest:
+                db.execute('DELETE FROM history WHERE id=?', (oldest['id'],))
     db.execute('''INSERT INTO history (user_id,name,birth_year,birth_month,birth_day,birth_hour,gender,standard_total,palace_total,song)
                   VALUES (?,?,?,?,?,?,?,?,?,?)''',
                (session['user_id'], name, y, m, d, h, gender, s['total'], p['total'], song))
@@ -499,6 +516,80 @@ def update_settings():
         db.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", (k, str(v)))
     db.commit()
     return jsonify({'ok': True})
+
+
+# ===================== 五行开运 API（VIP） =====================
+
+@app.route('/api/wuxing-luck', methods=['POST'])
+@login_required
+def wuxing_luck():
+    data = request.get_json()
+    try:
+        y = int(data['year']); m = int(data['month']); d = int(data['day'])
+        h = int(data.get('hour', 12))
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的数字'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '此功能为VIP专属', 'need_vip': True}), 403
+    try:
+        p = core.palace_bone_weight(y, m, d, h)
+        pillars = [p['year_p'], p['month_p'], p['day_p'], p['hour_p']]
+        result = core.wuxing_luck_guide(pillars)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify(result)
+
+
+# ===================== 流年运势 API（VIP） =====================
+
+@app.route('/api/liunian', methods=['POST'])
+@login_required
+def liunian():
+    data = request.get_json()
+    try:
+        y = int(data['year']); m = int(data['month']); d = int(data['day'])
+        h = int(data.get('hour', 12)); gender = data.get('gender', '男')
+        years = int(data.get('years', 10))
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的数字'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '此功能为VIP专属', 'need_vip': True}), 403
+    try:
+        p = core.palace_bone_weight(y, m, d, h)
+        pillars = [p['year_p'], p['month_p'], p['day_p'], p['hour_p']]
+        result = core.liunian_fortune(pillars, gender, y, years)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify({'years': result})
+
+
+# ===================== 姓名测评 API（VIP） =====================
+
+@app.route('/api/name-eval', methods=['POST'])
+@login_required
+def name_eval():
+    data = request.get_json()
+    try:
+        surname = (data.get('surname') or '').strip()
+        given = (data.get('given') or '').strip()
+        y = int(data['year']); m = int(data['month']); d = int(data['day'])
+        h = int(data.get('hour', 12))
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的信息'}), 400
+    if not surname or not given:
+        return jsonify({'error': '请填写姓名'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '此功能为VIP专属', 'need_vip': True}), 403
+    try:
+        p = core.palace_bone_weight(y, m, d, h)
+        pillars = [p['year_p'], p['month_p'], p['day_p'], p['hour_p']]
+        result = core.name_evaluation(surname, given, pillars)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify(result)
 
 
 # ===================== 管理员 API =====================
