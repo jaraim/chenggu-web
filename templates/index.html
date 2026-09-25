@@ -112,6 +112,7 @@
   <div class="tab" onclick="showTab('compare')">多人对比</div>
   <div class="tab" onclick="showTab('history')">历史记录</div>
   <div class="tab" onclick="showTab('jiazi')">六十甲子</div>
+  {% if is_admin %}<div class="tab" onclick="location.href='/admin'">后台管理</div>{% endif %}
 </div>
 
 <!-- ===== 称骨计算 ===== -->

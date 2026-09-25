@@ -40,6 +40,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            is_admin INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS history (
@@ -58,8 +60,21 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
     """)
+    # 兼容旧表：添加 is_admin / is_active 字段（如果不存在）
+    try:
+        db.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        db.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass
     db.commit()
     db.close()
+
+
+# 模块加载时自动建表（WSGI 模式下也能生效，修复注册报错）
+init_db()
 
 
 # ===================== 登录装饰器 =====================
@@ -76,10 +91,22 @@ def login_required(f):
 def current_user():
     if 'user_id' in session:
         db = get_db()
-        row = db.execute('SELECT id, username FROM users WHERE id=?', (session['user_id'],)).fetchone()
-        if row:
-            return {'id': row['id'], 'username': row['username']}
+        row = db.execute('SELECT id, username, is_admin, is_active FROM users WHERE id=?', (session['user_id'],)).fetchone()
+        if row and row['is_active']:
+            return {'id': row['id'], 'username': row['username'], 'is_admin': bool(row['is_admin'])}
     return None
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = current_user()
+        if not user:
+            return jsonify({'error': '未登录'}), 401
+        if not user.get('is_admin'):
+            return jsonify({'error': '需要管理员权限'}), 403
+        return f(*args, **kwargs)
+    return decorated
 
 
 # ===================== 页面路由 =====================
@@ -89,7 +116,15 @@ def index():
     user = current_user()
     if not user:
         return render_template('login.html')
-    return render_template('index.html', username=user['username'])
+    return render_template('index.html', username=user['username'], is_admin=user.get('is_admin', False))
+
+
+@app.route('/admin')
+def admin_page():
+    user = current_user()
+    if not user or not user.get('is_admin'):
+        return render_template('login.html')
+    return render_template('admin.html', username=user['username'])
 
 
 # ===================== 认证 API =====================
@@ -106,8 +141,10 @@ def register():
     db = get_db()
     if db.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone():
         return jsonify({'error': '用户名已存在'}), 400
-    db.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)',
-               (username, generate_password_hash(password)))
+    # 第一个注册的用户自动成为管理员
+    is_admin = 1 if db.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0 else 0
+    db.execute('INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+               (username, generate_password_hash(password), is_admin))
     db.commit()
     return jsonify({'ok': True, 'message': '注册成功，请登录'})
 
@@ -121,9 +158,11 @@ def login():
     row = db.execute('SELECT * FROM users WHERE username=?', (username,)).fetchone()
     if not row or not check_password_hash(row['password_hash'], password):
         return jsonify({'error': '用户名或密码错误'}), 401
+    if not row['is_active']:
+        return jsonify({'error': '账号已被禁用，请联系管理员'}), 403
     session['user_id'] = row['id']
     session['username'] = row['username']
-    return jsonify({'ok': True, 'username': row['username']})
+    return jsonify({'ok': True, 'username': row['username'], 'is_admin': bool(row['is_admin'])})
 
 
 @app.route('/api/logout', methods=['POST'])
@@ -336,13 +375,78 @@ def jiazi():
                     for n, gz, sx, ny in core.build_jiazi()])
 
 
+# ===================== 管理员 API =====================
+
+@app.route('/api/admin/stats', methods=['GET'])
+@admin_required
+def admin_stats():
+    db = get_db()
+    total_users = db.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+    active_users = db.execute('SELECT COUNT(*) FROM users WHERE is_active=1').fetchone()[0]
+    total_history = db.execute('SELECT COUNT(*) FROM history').fetchone()[0]
+    today_history = db.execute("SELECT COUNT(*) FROM history WHERE date(created_at)=date('now')").fetchone()[0]
+    # 最近7天计算量
+    rows = db.execute("""SELECT date(created_at) as d, COUNT(*) as c
+                         FROM history WHERE created_at >= date('now','-6 days')
+                         GROUP BY date(created_at) ORDER BY d""").fetchall()
+    daily = [{'date': r['d'], 'count': r['c']} for r in rows]
+    return jsonify({
+        'total_users': total_users, 'active_users': active_users,
+        'total_history': total_history, 'today_history': today_history,
+        'daily': daily,
+    })
+
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_users():
+    db = get_db()
+    rows = db.execute("""SELECT u.id, u.username, u.is_admin, u.is_active, u.created_at,
+                         (SELECT COUNT(*) FROM history h WHERE h.user_id=u.id) as calc_count
+                         FROM users u ORDER BY u.id DESC""").fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/admin/users/<int:uid>/toggle', methods=['POST'])
+@admin_required
+def admin_toggle_user(uid):
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    if user['is_admin']:
+        return jsonify({'error': '不能禁用管理员账号'}), 400
+    new_status = 0 if user['is_active'] else 1
+    db.execute('UPDATE users SET is_active=? WHERE id=?', (new_status, uid))
+    db.commit()
+    return jsonify({'ok': True, 'is_active': bool(new_status)})
+
+
+@app.route('/api/admin/history', methods=['GET'])
+@admin_required
+def admin_history():
+    db = get_db()
+    rows = db.execute("""SELECT h.*, u.username
+                         FROM history h JOIN users u ON h.user_id=u.id
+                         ORDER BY h.id DESC LIMIT 100""").fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/admin/history/<int:hid>', methods=['DELETE'])
+@admin_required
+def admin_delete_history(hid):
+    db = get_db()
+    db.execute('DELETE FROM history WHERE id=?', (hid,))
+    db.commit()
+    return jsonify({'ok': True})
+
+
 # ===================== 启动 =====================
 
 if __name__ == '__main__':
-    init_db()
     print("=" * 50)
     print("  称骨算命网站已启动")
     print("  访问地址：http://127.0.0.1:5000")
-    print("  首次使用请先注册账号")
+    print("  首次使用请先注册账号（第一个注册者自动成为管理员）")
     print("=" * 50)
     app.run(host='0.0.0.0', port=5000, debug=True)

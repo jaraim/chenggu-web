@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理 - 称骨算命</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; }
+  .header { background: #1a1a2e; color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 18px; }
+  .header a { color: #e94560; text-decoration: none; font-size: 14px; }
+  .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: bold; color: #e94560; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 16px; margin-bottom: 14px; color: #1a1a2e; border-left: 4px solid #e94560; padding-left: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #f8f9fa; color: #555; font-weight: 600; }
+  tr:hover { background: #f8f9fa; }
+  .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+  .badge-admin { background: #e94560; color: #fff; }
+  .badge-active { background: #27ae60; color: #fff; }
+  .badge-disabled { background: #95a5a6; color: #fff; }
+  .btn { padding: 5px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+  .btn-warn { background: #f39c12; color: #fff; }
+  .btn:hover { opacity: 0.85; }
+  .empty { text-align: center; color: #aaa; padding: 30px; }
+  .daily-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 10px 0; }
+  .daily-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .daily-bar .bar { width: 100%; background: linear-gradient(180deg, #e94560, #ff6b81); border-radius: 4px 4px 0 0; min-height: 4px; }
+  .daily-bar .date { font-size: 10px; color: #888; }
+  .daily-bar .count { font-size: 11px; font-weight: bold; color: #555; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>称骨算命 · 后台管理</h1>
+  <div>
+    <span style="margin-right:16px;font-size:14px">{{ username }}</span>
+    <a href="/">返回首页</a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats" id="stats"></div>
+
+  <div class="card">
+    <h2>近7天计算量</h2>
+    <div class="daily-chart" id="daily-chart"></div>
+  </div>
+
+  <div class="card">
+    <h2>用户管理</h2>
+    <table>
+      <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>计算次数</th><th>注册时间</th><th>操作</th></tr></thead>
+      <tbody id="user-list"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>最近计算记录（100条）</h2>
+    <table>
+      <thead><tr><th>ID</th><th>用户</th><th>姓名</th><th>生辰</th><th>性别</th><th>骨重</th><th>时间</th><th>操作</th></tr></thead>
+      <tbody id="history-list"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function api(url) {
+  const res = await fetch(url);
+  if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+  return res.json();
+}
+
+async function loadStats() {
+  try {
+    const s = await api('/api/admin/stats');
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="label">总用户数</div><div class="value">${s.total_users}</div></div>
+      <div class="stat-card"><div class="label">活跃用户</div><div class="value">${s.active_users}</div></div>
+      <div class="stat-card"><div class="label">总计算次数</div><div class="value">${s.total_history}</div></div>
+      <div class="stat-card"><div class="label">今日计算</div><div class="value">${s.today_history}</div></div>
+    `;
+    // 近7天柱状图
+    const chart = document.getElementById('daily-chart');
+    const max = Math.max(...s.daily.map(d => d.count), 1);
+    chart.innerHTML = s.daily.map(d => `
+      <div class="daily-bar">
+        <span class="count">${d.count}</span>
+        <div class="bar" style="height:${(d.count/max)*80}%"></div>
+        <span class="date">${d.date.slice(5)}</span>
+      </div>
+    `).join('');
+  } catch(e) { document.getElementById('stats').innerHTML = '<div class="empty">加载失败：'+e.message+'</div>'; }
+}
+
+async function loadUsers() {
+  try {
+    const users = await api('/api/admin/users');
+    const tbody = document.getElementById('user-list');
+    if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无用户</td></tr>'; return; }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td><b>${u.username}</b></td>
+        <td>${u.is_admin ? '<span class="badge badge-admin">管理员</span>' : '普通用户'}</td>
+        <td>${u.is_active ? '<span class="badge badge-active">正常</span>' : '<span class="badge badge-disabled">已禁用</span>'}</td>
+        <td>${u.calc_count}</td>
+        <td>${u.created_at}</td>
+        <td>${u.is_admin ? '-' : `<button class="btn ${u.is_active ? 'btn-warn' : 'btn-danger'}" onclick="toggleUser(${u.id})">${u.is_active ? '禁用' : '启用'}</button>`}</td>
+      </tr>
+    `).join('');
+  } catch(e) { document.getElementById('user-list').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>'; }
+}
+
+async function toggleUser(uid) {
+  if (!confirm('确定切换该用户状态？')) return;
+  await fetch('/api/admin/users/' + uid + '/toggle', {method: 'POST'});
+  loadUsers();
+}
+
+async function loadHistory() {
+  try {
+    const rows = await api('/api/admin/history');
+    const tbody = document.getElementById('history-list');
+    if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无记录</td></tr>'; return; }
+    tbody.innerHTML = rows.map(h => `
+      <tr>
+        <td>${h.id}</td>
+        <td>${h.username}</td>
+        <td>${h.name || '-'}</td>
+        <td>${h.birth_year}-${String(h.birth_month).padStart(2,'0')}-${String(h.birth_day).padStart(2,'0')} ${String(h.birth_hour).padStart(2,'0')}时</td>
+        <td>${h.gender}</td>
+        <td>${h.standard_total}两</td>
+        <td>${h.created_at}</td>
+        <td><button class="btn btn-danger" onclick="delHistory(${h.id})">删除</button></td>
+      </tr>
+    `).join('');
+  } catch(e) { document.getElementById('history-list').innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>'; }
+}
+
+async function delHistory(hid) {
+  if (!confirm('确定删除这条记录？')) return;
+  await fetch('/api/admin/history/' + hid, {method: 'DELETE'});
+  loadHistory(); loadStats();
+}
+
+loadStats(); loadUsers(); loadHistory();
+</script>
+</body>
+</html>
