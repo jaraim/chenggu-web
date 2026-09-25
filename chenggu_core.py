@@ -1678,10 +1678,63 @@ NUMBER_LUCK = {
 }
 
 
+def get_month_wang(month):
+    """公历月份对应的当令主旺五行（冬水、春木、夏火、秋金）。"""
+    if month in (12, 1, 2):
+        return '水'
+    if month in (3, 4, 5):
+        return '木'
+    if month in (6, 7, 8):
+        return '火'
+    return '金'  # 9,10,11
+
+
+def strongest_wuxing(year, month, day):
+    """
+    计算当日五行强弱（旺相休囚死 + 日柱五行加权）。
+    返回强弱排行、最强五行、对应数字。
+    """
+    gz = get_day_ganzhi(year, month, day)
+    day_gan, day_zhi = gz[0], gz[1]
+
+    # 月令主旺
+    wang = get_month_wang(month)
+    # 旺相休囚死
+    xiang = WUXING_SHENG[wang]                                    # 相：旺所生
+    xiu = [w for w in WUXING_ORDER if WUXING_SHENG[w] == wang][0]  # 休：生旺者
+    qiu = WUXING_KE[wang]                                         # 囚：克旺者
+    si = [w for w in WUXING_ORDER if WUXING_KE[w] == wang][0]     # 死：旺所克
+
+    score = {w: 0 for w in WUXING_ORDER}
+    score[wang] += 3     # 当令者旺
+    score[xiang] += 2    # 旺所生者相
+    score[xiu] += 1      # 生旺者休
+    score[qiu] += 0      # 克旺者囚
+    score[si] -= 1       # 旺所克者死
+    # 日柱加权：日干>日支
+    score[TIANGAN_WUXING[day_gan]] += 2
+    score[DIZHI_WUXING[day_zhi]] += 1.5
+
+    ranking = sorted(score.items(), key=lambda x: -x[1])
+    strongest = ranking[0][0]
+    groups = number_groups()
+
+    return {
+        'ranking': [{'w': w, 'score': s, 'numbers': groups[w]} for w, s in ranking],
+        'strongest': strongest,
+        'strongest_numbers': groups[strongest],
+        'wang': wang,
+        'xiang': xiang, 'xiu': xiu, 'qiu': qiu, 'si': si,
+        'day_gan_wuxing': TIANGAN_WUXING[day_gan],
+        'day_zhi_wuxing': DIZHI_WUXING[day_zhi],
+    }
+
+
 def lucky_numbers(year, month, day):
     """
-    输入年月日，返回当天最佳吉数（1-49）。
-    原理：当天日柱干支 → 日主五行 + 生肖五行 → 比和+生扶为吉，克我为忌。
+    输入年月日，返回当日五行强弱及吉数（1-49）。
+    原理：旺相休囚死定五行强弱 → 最强五行数字为主；
+          日主+生肖比和生扶为吉数，克者为忌。
     """
     import datetime
     try:
@@ -1697,6 +1750,9 @@ def lucky_numbers(year, month, day):
 
     # 生肖五行（地支五行）
     shengxiao_wuxing = DIZHI_WUXING[day_zhi]
+
+    # 当日五行强弱（旺相休囚死）
+    strength = strongest_wuxing(year, month, day)
 
     # 生我者（印）和克我者（官杀）
     sheng_wo = [w for w in WUXING_ORDER if WUXING_SHENG[w] == day_wuxing]
@@ -1749,6 +1805,7 @@ def lucky_numbers(year, month, day):
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,
+        'strength': strength,        # 当日五行强弱（含排行/最强/旺相休囚死）
         'zhu_ji': zhu_ji,           # 主吉数（日主比和）
         'ci_ji': ci_ji,             # 次吉数（日主生扶）
         'sx_ji': sx_ji,             # 生肖吉数（生肖五行）
@@ -1759,6 +1816,7 @@ def lucky_numbers(year, month, day):
         'number_luck': NUMBER_LUCK,
         'tips': [
             f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}，生肖五行属{shengxiao_wuxing}',
+            f'当日最强五行为{strength["strongest"]}，其对应数字为最旺之数',
             f'比和{day_wuxing}、生扶{sheng_wo}与生肖{shengxiao_wuxing}之数为吉',
             f'克制日主的{ke_wo}属性数字当日宜谨慎使用',
             '以上仅供参考娱乐，不构成任何投注建议',

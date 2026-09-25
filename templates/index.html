@@ -426,15 +426,15 @@
 <!-- ===== 今日吉数（免费） ===== -->
 <div class="panel" id="panel-lucky">
   <div class="card">
-    <h2>今日吉数查询</h2>
-    <p style="font-size:13px;color:#888;margin-bottom:10px">输入日期，按河图五行数理推算当天1-49最佳吉数。按当日日柱五行，比和生扶为吉、克我为忌。</p>
+    <h2>当日五行强弱与吉数</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">输入日期，按旺相休囚死规则推算当日五行强弱，得出最强五行及其1-49对应数字；并附日主+生肖吉数参考。</p>
     <div class="form-row">
       <div class="form-group"><label>年份</label><input type="number" id="lk-year" placeholder="如2026"></div>
       <div class="form-group"><label>月份</label><input type="number" id="lk-month" placeholder="1-12"></div>
       <div class="form-group"><label>日期</label><input type="number" id="lk-day" placeholder="1-31"></div>
       <div class="form-group"><label></label><button class="btn" onclick="useToday()">今天</button></div>
     </div>
-    <button class="btn" onclick="doLucky()">查询吉数</button>
+    <button class="btn" onclick="doLucky()">查询当日五行</button>
     <div id="lk-result" style="display:none;margin-top:15px"></div>
   </div>
 </div>
@@ -1078,12 +1078,12 @@ async function doLucky() {
     el.style.display = 'block';
     // 五行分组
     let groupsHtml = '';
-    const colors = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'};
+    const groupColors = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'};
     for (const w of ['金','木','水','火','土']) {
       const nums = r.groups[w].join(' ');
       const isJi = (w === r.day_wuxing || w === r.sheng_wo);
       groupsHtml += `<div style="margin:6px 0;font-size:13px">
-  <span style="display:inline-block;width:60px;font-weight:bold;color:${colors[w]}">${w}</span>
+  <span style="display:inline-block;width:60px;font-weight:bold;color:${groupColors[w]}">${w}</span>
   <span style="color:${isJi ? '#27ae60' : '#999'}">${nums}</span>${isJi ? ' <span style="color:#27ae60;font-size:11px">吉</span>' : ''}
 </div>`;
     }
@@ -1097,12 +1097,34 @@ async function doLucky() {
   <div style="font-size:10px;color:#999;margin-top:2px">${luck.slice(0,10)}</div>
 </div>`;
     }).join('');
-    el.innerHTML = `<div class="title">${r.date} · 当日吉数</div>
+    // 五行强弱排行条
+    const colors = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'};
+    const maxScore = Math.max(...r.strength.ranking.map(x=>x.score));
+    const rankHtml = r.strength.ranking.map((x,i) => {
+      const isTop = i === 0;
+      const pct = Math.max(10, Math.round(x.score / maxScore * 100));
+      return `<div style="display:flex;align-items:center;margin:6px 0;font-size:13px">
+  <span style="width:50px;font-weight:bold;color:${colors[x.w]}">${x.w}${isTop ? ' ★' : ''}</span>
+  <div style="flex:1;background:#eee;height:18px;border-radius:3px;margin:0 8px;overflow:hidden">
+    <div style="width:${pct}%;height:100%;background:${isTop ? 'linear-gradient(90deg,#f1c40f,#e67e22)' : colors[x.w]};border-radius:3px"></div>
+  </div>
+  <span style="width:35px;color:${isTop ? '#e67e22' : '#999'};font-weight:${isTop?'bold':'normal'}">${x.score}</span>
+</div>`;
+    }).join('');
+    const strongNums = r.strength.strongest_numbers.join(' ');
+    el.innerHTML = `<div class="title">${r.date} · 当日五行强弱</div>
 <div style="background:#faf6ee;border-radius:8px;padding:15px;text-align:center">
-  <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）</div>
-  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生肖五行：<b style="color:#8a6d4b">${r.shengxiao_wuxing}</b>　生扶：<b>${r.sheng_wo}</b>　克我：<b style="color:#e74c3c">${r.ke_wo}</b></div>
-  <div style="font-size:12px;color:#999;margin-top:5px">吉数来源：日主${r.day_wuxing}（比和）+ ${r.sheng_wo}（生扶）+ 生肖${r.shengxiao_wuxing}（比和）</div>
+  <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）　当月令旺：<b style="color:#8a6d4b">${r.strength.wang}</b></div>
+  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生肖五行：<b style="color:#8a6d4b">${r.shengxiao_wuxing}</b></div>
 </div>
+<span class="section">当日最强五行</span>
+<div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:12px;padding:18px;text-align:center;margin:8px 0">
+  <div style="font-size:36px;font-weight:bold;color:#5a3d2b">${r.strength.strongest} 五行最旺</div>
+  <div style="font-size:20px;color:#8a6d4b;margin-top:6px;letter-spacing:2px">${strongNums}</div>
+  <div style="font-size:12px;color:#999;margin-top:4px">旺相休囚死：${r.strength.wang}旺 · ${r.strength.xiang}相 · ${r.strength.xiu}休 · ${r.strength.qiu}囚 · ${r.strength.si}死</div>
+</div>
+<span class="section">五行强弱排行</span>
+${rankHtml}
 <span class="section">最佳吉数 TOP ${r.best.length}</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
