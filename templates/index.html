@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>称骨算命</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f5f0e6; color: #3a2a1a; min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #5a3d2b, #8a6d4b);
+    color: #fff; padding: 14px 20px; display: flex;
+    justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .header h1 { font-size: 20px; letter-spacing: 3px; }
+  .header .user { font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  .header button {
+    background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+    padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .header button:hover { background: rgba(255,255,255,0.35); }
+  .tabs {
+    display: flex; overflow-x: auto; background: #fffdf7;
+    border-bottom: 2px solid #e8ddd0; padding: 0 10px;
+  }
+  .tab {
+    padding: 12px 16px; cursor: pointer; font-size: 14px; color: #8a6d4b;
+    white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+  .tab.active { color: #5a3d2b; border-bottom-color: #b08968; font-weight: bold; }
+  .tab:hover { color: #5a3d2b; }
+  .panel { display: none; padding: 20px; max-width: 800px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .card {
+    background: #fffdf7; border-radius: 12px; padding: 20px;
+    box-shadow: 0 2px 12px rgba(90,61,43,0.1); margin-bottom: 16px;
+  }
+  .card h2 { font-size: 17px; color: #5a3d2b; margin-bottom: 14px; border-left: 4px solid #b08968; padding-left: 10px; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; align-items: flex-end; }
+  .form-group { flex: 1; min-width: 100px; }
+  .form-group label { display: block; font-size: 12px; color: #8a6d4b; margin-bottom: 4px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 9px 10px; border: 1px solid #d4c4b0; border-radius: 6px;
+    font-size: 14px; background: #fff; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: #b08968; }
+  .btn {
+    background: #b08968; color: #fff; border: none; padding: 10px 24px;
+    border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold;
+  }
+  .btn:hover { background: #9a7556; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-danger { background: #a0522d; }
+  .btn-danger:hover { background: #8b4513; }
+  .result {
+    background: #fff; border: 1px solid #e8ddd0; border-radius: 8px;
+    padding: 16px; font-size: 14px; line-height: 1.8; white-space: pre-wrap;
+    margin-top: 14px; max-height: 500px; overflow-y: auto;
+  }
+  .result .title { font-size: 16px; font-weight: bold; color: #5a3d2b; text-align: center; margin-bottom: 8px; }
+  .result .section { color: #b08968; font-weight: bold; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #f5f0e6; color: #5a3d2b; font-weight: bold; }
+  tr:hover { background: #faf7f0; }
+  .score-bar { height: 24px; background: #e8ddd0; border-radius: 12px; overflow: hidden; margin: 8px 0; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, #b08968, #d4a574); border-radius: 12px; transition: width 0.5s; }
+  .score-text { text-align: center; font-size: 24px; font-weight: bold; color: #b08968; margin: 8px 0; }
+  .name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 10px; }
+  .name-item {
+    background: #f5f0e6; padding: 10px; text-align: center; border-radius: 6px;
+    font-size: 15px; color: #5a3d2b; cursor: pointer; transition: background 0.2s;
+  }
+  .name-item:hover { background: #e8ddd0; }
+  .compare-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .compare-row input { padding: 7px; border: 1px solid #d4c4b0; border-radius: 5px; font-size: 13px; }
+  .compare-row .idx { width: 24px; text-align: center; font-weight: bold; color: #b08968; }
+  .empty { text-align: center; color: #aaa; padding: 30px; font-size: 14px; }
+  .wuxing-bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+  .wuxing-bar .label { width: 30px; font-weight: bold; }
+  .wuxing-bar .bar { flex: 1; height: 18px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .wuxing-bar .fill { height: 100%; background: #b08968; }
+  .wuxing-bar .count { width: 30px; text-align: right; }
+  @media (max-width: 600px) {
+    .header h1 { font-size: 16px; }
+    .panel { padding: 12px; }
+    .card { padding: 14px; }
+    .form-group { min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>称骨算命</h1>
+  <div class="user">
+    <span id="username">{{ username }}</span>
+    <button onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('calc')">称骨计算</div>
+  <div class="tab" onclick="showTab('marriage')">合婚分析</div>
+  <div class="tab" onclick="showTab('name')">取名推荐</div>
+  <div class="tab" onclick="showTab('deep')">深度报告</div>
+  <div class="tab" onclick="showTab('compare')">多人对比</div>
+  <div class="tab" onclick="showTab('history')">历史记录</div>
+  <div class="tab" onclick="showTab('jiazi')">六十甲子</div>
+</div>
+
+<!-- ===== 称骨计算 ===== -->
+<div class="panel active" id="panel-calc">
+  <div class="card">
+    <h2>称骨计算</h2>
+    <div class="form-row">
+      <div class="form-group"><label>姓名（选填）</label><input type="text" id="c-name"></div>
+      <div class="form-group"><label>性别</label><select id="c-gender"><option>男</option><option>女</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>出生年</label><input type="number" id="c-year" placeholder="1990"></div>
+      <div class="form-group"><label>月</label><input type="number" id="c-month" placeholder="1-12"></div>
+      <div class="form-group"><label>日</label><input type="number" id="c-day" placeholder="1-31"></div>
+      <div class="form-group"><label>时(0-23)</label><input type="number" id="c-hour" value="12"></div>
+    </div>
+    <button class="btn" onclick="doCalc()">开始计算</button>
+    <div class="result" id="c-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 合婚分析 ===== -->
+<div class="panel" id="panel-marriage">
+  <div class="card">
+    <h2>合婚分析</h2>
+    <p style="font-size:13px;color:#8a6d4b;margin-bottom:12px">输入两人出生日期，从生肖、五行、日柱、骨重四个维度分析匹配度。</p>
+    <h3 style="font-size:14px;color:#5a3d2b;margin:10px 0 6px">甲方</h3>
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input type="text" id="m1-name"></div>
+      <div class="form-group"><label>年</label><input type="number" id="m1-year"></div>
+      <div class="form-group"><label>月</label><input type="number" id="m1-month"></div>
+      <div class="form-group"><label>日</label><input type="number" id="m1-day"></div>
+      <div class="form-group"><label>时</label><input type="number" id="m1-hour" value="12"></div>
+    </div>
+    <h3 style="font-size:14px;color:#5a3d2b;margin:10px 0 6px">乙方</h3>
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input type="text" id="m2-name"></div>
+      <div class="form-group"><label>年</label><input type="number" id="m2-year"></div>
+      <div class="form-group"><label>月</label><input type="number" id="m2-month"></div>
+      <div class="form-group"><label>日</label><input type="number" id="m2-day"></div>
+      <div class="form-group"><label>时</label><input type="number" id="m2-hour" value="12"></div>
+    </div>
+    <button class="btn" onclick="doMarriage()">开始合婚</button>
+    <div class="result" id="m-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 取名推荐 ===== -->
+<div class="panel" id="panel-name">
+  <div class="card">
+    <h2>取名推荐</h2>
+    <p style="font-size:13px;color:#8a6d4b;margin-bottom:12px">基于八字五行，缺什么补什么，推荐吉祥字。</p>
+    <div class="form-row">
+      <div class="form-group"><label>姓氏</label><input type="text" id="n-surname" placeholder="如：张"></div>
+      <div class="form-group"><label>性别</label><select id="n-gender"><option>男</option><option>女</option></select></div>
+      <div class="form-group"><label>年</label><input type="number" id="n-year"></div>
+      <div class="form-group"><label>月</label><input type="number" id="n-month"></div>
+      <div class="form-group"><label>日</label><input type="number" id="n-day"></div>
+      <div class="form-group"><label>时</label><input type="number" id="n-hour" value="12"></div>
+    </div>
+    <button class="btn" onclick="doName()">推荐名字</button>
+    <div class="result" id="n-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 深度报告 ===== -->
+<div class="panel" id="panel-deep">
+  <div class="card">
+    <h2>深度命理报告</h2>
+    <p style="font-size:13px;color:#8a6d4b;margin-bottom:12px">性格、事业、财运、婚姻、健康、大运全方位分析。</p>
+    <div class="form-row">
+      <div class="form-group"><label>姓名</label><input type="text" id="d-name"></div>
+      <div class="form-group"><label>性别</label><select id="d-gender"><option>男</option><option>女</option></select></div>
+      <div class="form-group"><label>年</label><input type="number" id="d-year"></div>
+      <div class="form-group"><label>月</label><input type="number" id="d-month"></div>
+      <div class="form-group"><label>日</label><input type="number" id="d-day"></div>
+      <div class="form-group"><label>时</label><input type="number" id="d-hour" value="12"></div>
+    </div>
+    <button class="btn" onclick="doDeep()">生成报告</button>
+    <div class="result" id="d-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 多人对比 ===== -->
+<div class="panel" id="panel-compare">
+  <div class="card">
+    <h2>多人生辰对比</h2>
+    <p style="font-size:13px;color:#8a6d4b;margin-bottom:12px">最多4人，留空的行忽略。</p>
+    <div id="compare-rows"></div>
+    <button class="btn" onclick="doCompare()">开始对比</button>
+    <div class="result" id="cmp-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ===== 历史记录 ===== -->
+<div class="panel" id="panel-history">
+  <div class="card">
+    <h2>历史记录</h2>
+    <div style="margin-bottom:10px">
+      <button class="btn btn-sm btn-danger" onclick="clearHistory()">清空全部</button>
+      <button class="btn btn-sm" onclick="loadHistory()">刷新</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ===== 六十甲子 ===== -->
+<div class="panel" id="panel-jiazi">
+  <div class="card">
+    <h2>六十甲子对照表</h2>
+    <div class="form-group" style="margin-bottom:12px">
+      <input type="text" id="jiazi-search" placeholder="搜索干支/生肖/纳音..." oninput="renderJiazi()">
+    </div>
+    <div id="jiazi-table"></div>
+  </div>
+</div>
+
+<script>
+// ===== 通用 =====
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'history') loadHistory();
+  if (name === 'jiazi') loadJiazi();
+}
+
+async function api(url, method='GET', body=null) {
+  const opt = { method, headers: {'Content-Type': 'application/json'} };
+  if (body) opt.body = JSON.stringify(body);
+  const res = await fetch(url, opt);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+
+async function logout() {
+  await api('/api/logout', 'POST');
+  location.href = '/';
+}
+
+// ===== 称骨计算 =====
+async function doCalc() {
+  const body = {
+    name: document.getElementById('c-name').value,
+    gender: document.getElementById('c-gender').value,
+    year: +document.getElementById('c-year').value,
+    month: +document.getElementById('c-month').value,
+    day: +document.getElementById('c-day').value,
+    hour: +document.getElementById('c-hour').value,
+  };
+  if (!body.year || !body.month || !body.day) { alert('请填写完整的年月日'); return; }
+  try {
+    const r = await api('/api/calc', 'POST', body);
+    const el = document.getElementById('c-result');
+    el.style.display = 'block';
+    el.innerHTML = `<div class="title">${r.name ? '【'+r.name+'】' : ''}称骨结果</div>
+      公历：${r.solar}　性别：${r.gender}命
+农历：${r.lunar}
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">★ 标准称骨法</span>
+出生年【${r.standard.gz}年】：${r.standard.y_text}
+出生月：${r.standard.m_text}
+出生日：${r.standard.d_text}
+出生时【${r.standard.total_text.replace(/.*?([0-9]+两.*?钱|.*?钱)/,'$1')}】：${r.standard.t_text}
+合 计：${r.standard.total_text}
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">★ 宫位称骨法（四柱）</span>
+年柱【${r.palace.year_p}】：${r.palace.y_text}
+月柱【${r.palace.month_p}】：${r.palace.m_text}
+日柱【${r.palace.day_p}】：${r.palace.d_text}
+时柱【${r.palace.hour_p}】：${r.palace.t_text}
+四柱合计：${r.palace.total_text}
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">【${r.gender}命称骨歌 · ${r.standard.total_text}】</span>
+${r.song}`;
+  } catch(e) { alert(e.message); }
+}
+
+// ===== 合婚 =====
+async function doMarriage() {
+  const body = {
+    p1: { name: val('m1-name'), year: +val('m1-year'), month: +val('m1-month'), day: +val('m1-day'), hour: +val('m1-hour') },
+    p2: { name: val('m2-name'), year: +val('m2-year'), month: +val('m2-month'), day: +val('m2-day'), hour: +val('m2-hour') },
+  };
+  if (!body.p1.year || !body.p2.year) { alert('请填写两人的完整出生日期'); return; }
+  try {
+    const r = await api('/api/marriage', 'POST', body);
+    const el = document.getElementById('m-result');
+    el.style.display = 'block';
+    el.innerHTML = `<div class="title">${r.name1} 与 ${r.name2} 合婚分析</div>
+<div class="score-text">${r.score} 分 · ${r.level}</div>
+<div class="score-bar"><div class="score-fill" style="width:${r.score}%"></div></div>
+<span class="section">【生肖配对】(${r.shengxiao_score}分)</span>
+${r.shengxiao}
+<span class="section">【五行互补】(${r.wuxing_score}分)</span>
+${r.wuxing}
+两人五行合计：金${r.wuxing_combined.金} 木${r.wuxing_combined.木} 水${r.wuxing_combined.水} 火${r.wuxing_combined.火} 土${r.wuxing_combined.土}
+<span class="section">【日柱关系】(${r.rizhu_score}分)</span>
+${r.rizhu}
+<span class="section">【骨重匹配】(${r.guzhong_score}分)</span>
+${r.guzhong}
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">【综合建议】</span>
+${r.advice}
+甲方四柱：${r.p1_pillars.join(' ')}
+乙方四柱：${r.p2_pillars.join(' ')}`;
+  } catch(e) { alert(e.message); }
+}
+
+// ===== 取名 =====
+async function doName() {
+  const body = {
+    surname: val('n-surname'), gender: val('n-gender'),
+    year: +val('n-year'), month: +val('n-month'), day: +val('n-day'), hour: +val('n-hour'),
+  };
+  if (!body.surname || !body.year) { alert('请填写姓氏和出生日期'); return; }
+  try {
+    const r = await api('/api/name', 'POST', body);
+    const el = document.getElementById('n-result');
+    el.style.display = 'block';
+    let wxHtml = '';
+    for (const w of ['金','木','水','火','土']) {
+      const c = r.wuxing[w];
+      wxHtml += `<div class="wuxing-bar"><span class="label">${w}</span><div class="bar"><div class="fill" style="width:${c*12.5}%"></div></div><span class="count">${c}</span></div>`;
+    }
+    const singles = r.names.filter(n => n.length === r.surname.length + 1);
+    const doubles = r.names.filter(n => n.length === r.surname.length + 2);
+    el.innerHTML = `<div class="title">${r.surname}氏取名推荐</div>
+四柱：${r.pillars.join(' ')}
+日主：${r.day_master}（${r.day_master_wuxing}）
+<span class="section">八字五行分布</span>
+${wxHtml}
+<span class="section">喜用神</span>
+${r.reason}
+<span class="section">推荐名字（单字名）</span>
+<div class="name-grid">${singles.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
+<span class="section">推荐名字（双字名）</span>
+<div class="name-grid">${doubles.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
+（点击名字可复制，仅供参考）`;
+  } catch(e) { alert(e.message); }
+}
+
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => alert('已复制：' + t));
+}
+
+// ===== 深度报告 =====
+async function doDeep() {
+  const body = {
+    name: val('d-name'), gender: val('d-gender'),
+    year: +val('d-year'), month: +val('d-month'), day: +val('d-day'), hour: +val('d-hour'),
+  };
+  if (!body.year) { alert('请填写出生日期'); return; }
+  try {
+    const r = await api('/api/deep', 'POST', body);
+    const el = document.getElementById('d-result');
+    el.style.display = 'block';
+    let wxHtml = '';
+    for (const w of ['金','木','水','火','土']) {
+      const c = r.wuxing_count[w];
+      wxHtml += `<div class="wuxing-bar"><span class="label">${w}</span><div class="bar"><div class="fill" style="width:${c*12.5}%"></div></div><span class="count">${c}</span></div>`;
+    }
+    el.innerHTML = `<div class="title">${r.name} · 深度命理报告</div>
+公历：${r.solar}　性别：${r.gender}命
+农历：${r.lunar}
+四柱：${r.pillars.join(' ')}
+骨重：标准${r.standard_text} / 宫位${r.palace_text}（${r.level}）
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">【五行与日主】</span>
+日主：${r.day_master}（${r.day_master_wuxing}）
+${wxHtml}
+<span class="section">【性格特征】</span>
+${r.personality}
+<span class="section">【事业财运】</span>
+${r.career}
+<span class="section">【婚姻感情】</span>
+${r.marriage}
+<span class="section">【健康注意】</span>
+${r.health}
+<span class="section">【大运走势】</span>
+${r.dayun.map(d=>`${d[0]}：${d[1]}`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━
+<span class="section">【称骨歌】</span>
+${r.song}`;
+  } catch(e) { alert(e.message); }
+}
+
+// ===== 多人对比 =====
+function initCompareRows() {
+  const container = document.getElementById('compare-rows');
+  let html = '';
+  for (let i = 1; i <= 4; i++) {
+    html += `<div class="compare-row">
+      <span class="idx">${i}</span>
+      <input type="text" id="cmp${i}-name" placeholder="姓名" style="width:80px">
+      <input type="number" id="cmp${i}-year" placeholder="年" style="width:60px">
+      <input type="number" id="cmp${i}-month" placeholder="月" style="width:45px">
+      <input type="number" id="cmp${i}-day" placeholder="日" style="width:45px">
+      <input type="number" id="cmp${i}-hour" value="12" style="width:45px">
+      <select id="cmp${i}-gender" style="padding:7px;border:1px solid #d4c4b0;border-radius:5px;font-size:13px"><option>男</option><option>女</option></select>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+async function doCompare() {
+  const people = [];
+  for (let i = 1; i <= 4; i++) {
+    const y = +val(`cmp${i}-year`);
+    if (!y) continue;
+    people.push({
+      name: val(`cmp${i}-name`), gender: val(`cmp${i}-gender`),
+      year: y, month: +val(`cmp${i}-month`), day: +val(`cmp${i}-day`), hour: +val(`cmp${i}-hour`),
+    });
+  }
+  if (people.length < 2) { alert('至少填写2人的完整出生日期'); return; }
+  try {
+    const r = await api('/api/compare', 'POST', {people});
+    const el = document.getElementById('cmp-result');
+    el.style.display = 'block';
+    let tableHtml = '<table><tr><th>排名</th><th>姓名</th><th>生辰</th><th>农历</th><th>标准骨重</th><th>宫位合计</th></tr>';
+    r.people.forEach((p, i) => {
+      tableHtml += `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.birth}</td><td>${p.lunar}</td><td><b>${p.standard_text}</b></td><td>${p.palace_text}</td></tr>`;
+    });
+    tableHtml += '</table>';
+    let songsHtml = '<span class="section">各人称骨歌</span>\n';
+    r.people.forEach(p => {
+      songsHtml += `【${p.name}】${p.standard_text}（${p.gender}命）\n${p.song.substring(0, 80)}…\n\n`;
+    });
+    el.innerHTML = `<div class="title">多人生辰对比（按标准骨重排序）</div>${tableHtml}\n${songsHtml}`;
+  } catch(e) { alert(e.message); }
+}
+
+// ===== 历史记录 =====
+async function loadHistory() {
+  try {
+    const rows = await api('/api/history');
+    const el = document.getElementById('history-list');
+    if (rows.length === 0) { el.innerHTML = '<div class="empty">暂无历史记录</div>'; return; }
+    let html = '<table><tr><th>姓名</th><th>生辰</th><th>性别</th><th>标准骨重</th><th>时间</th><th>操作</th></tr>';
+    rows.forEach(r => {
+      html += `<tr><td>${r.name || '（未命名）'}</td><td>${r.birth_year}-${String(r.birth_month).padStart(2,'0')}-${String(r.birth_day).padStart(2,'0')} ${String(r.birth_hour).padStart(2,'0')}时</td><td>${r.gender}</td><td><b>${(r.standard_total).toFixed(1)}两</b></td><td>${r.created_at}</td><td><button class="btn btn-sm btn-danger" onclick="delHistory(${r.id})">删除</button></td></tr>`;
+    });
+    html += '</table>';
+    el.innerHTML = html;
+  } catch(e) { document.getElementById('history-list').innerHTML = '<div class="empty">加载失败</div>'; }
+}
+
+async function delHistory(id) {
+  if (!confirm('确定删除这条记录？')) return;
+  await api('/api/history/' + id, 'DELETE');
+  loadHistory();
+}
+
+async function clearHistory() {
+  if (!confirm('确定清空全部历史记录？此操作不可恢复。')) return;
+  await api('/api/history', 'DELETE');
+  loadHistory();
+}
+
+// ===== 六十甲子 =====
+let jiaziData = [];
+async function loadJiazi() {
+  if (jiaziData.length === 0) {
+    jiaziData = await api('/api/jiazi');
+  }
+  renderJiazi();
+}
+
+function renderJiazi() {
+  const kw = (document.getElementById('jiazi-search').value || '').trim();
+  const filtered = kw ? jiaziData.filter(r => r.ganzhi.includes(kw) || r.shengxiao.includes(kw) || r.nayin.includes(kw)) : jiaziData;
+  let html = '<table><tr><th>序号</th><th>干支</th><th>生肖</th><th>纳音五行</th></tr>';
+  filtered.forEach(r => {
+    html += `<tr><td>${r.num}</td><td><b>${r.ganzhi}</b></td><td>${r.shengxiao}</td><td>${r.nayin}</td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('jiazi-table').innerHTML = html;
+}
+
+// ===== 工具 =====
+function val(id) { return document.getElementById(id).value; }
+
+// 初始化
+initCompareRows();
+</script>
+</body>
+</html>
