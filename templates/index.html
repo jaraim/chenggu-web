@@ -188,7 +188,9 @@
       <div class="form-group"><label>出生年</label><input type="number" id="c-year" placeholder="1990"></div>
       <div class="form-group"><label>月</label><input type="number" id="c-month" placeholder="1-12"></div>
       <div class="form-group"><label>日</label><input type="number" id="c-day" placeholder="1-31"></div>
-      <div class="form-group"><label>时(0-23)</label><input type="number" id="c-hour" value="12"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="c-hour"><option value="0">子时(23-1)</option><option value="2">丑时(1-3)</option><option value="4">寅时(3-5)</option><option value="6">卯时(5-7)</option><option value="8">辰时(7-9)</option><option value="10">巳时(9-11)</option><option value="12" selected>午时(11-13)</option><option value="14">未时(13-15)</option><option value="16">申时(15-17)</option><option value="18">酉时(17-19)</option><option value="20">戌时(19-21)</option><option value="22">亥时(21-23)</option></select>
+      </div>
     </div>
     <button class="btn" onclick="doCalc()">开始计算</button>
     <div class="result" id="c-result" style="display:none"></div>
@@ -206,7 +208,9 @@
       <div class="form-group"><label>年</label><input type="number" id="m1-year"></div>
       <div class="form-group"><label>月</label><input type="number" id="m1-month"></div>
       <div class="form-group"><label>日</label><input type="number" id="m1-day"></div>
-      <div class="form-group"><label>时</label><input type="number" id="m1-hour" value="12"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="m1-hour"><option value="0">子</option><option value="2">丑</option><option value="4">寅</option><option value="6">卯</option><option value="8">辰</option><option value="10">巳</option><option value="12" selected>午</option><option value="14">未</option><option value="16">申</option><option value="18">酉</option><option value="20">戌</option><option value="22">亥</option></select>
+      </div>
     </div>
     <h3 style="font-size:14px;color:#5a3d2b;margin:10px 0 6px">乙方</h3>
     <div class="form-row">
@@ -214,7 +218,9 @@
       <div class="form-group"><label>年</label><input type="number" id="m2-year"></div>
       <div class="form-group"><label>月</label><input type="number" id="m2-month"></div>
       <div class="form-group"><label>日</label><input type="number" id="m2-day"></div>
-      <div class="form-group"><label>时</label><input type="number" id="m2-hour" value="12"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="m2-hour"><option value="0">子</option><option value="2">丑</option><option value="4">寅</option><option value="6">卯</option><option value="8">辰</option><option value="10">巳</option><option value="12" selected>午</option><option value="14">未</option><option value="16">申</option><option value="18">酉</option><option value="20">戌</option><option value="22">亥</option></select>
+      </div>
     </div>
     <button class="btn" onclick="doMarriage()">开始合婚</button>
     <div class="result" id="m-result" style="display:none"></div>
@@ -232,7 +238,9 @@
       <div class="form-group"><label>年</label><input type="number" id="n-year"></div>
       <div class="form-group"><label>月</label><input type="number" id="n-month"></div>
       <div class="form-group"><label>日</label><input type="number" id="n-day"></div>
-      <div class="form-group"><label>时</label><input type="number" id="n-hour" value="12"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="n-hour"><option value="0">子</option><option value="2">丑</option><option value="4">寅</option><option value="6">卯</option><option value="8">辰</option><option value="10">巳</option><option value="12" selected>午</option><option value="14">未</option><option value="16">申</option><option value="18">酉</option><option value="20">戌</option><option value="22">亥</option></select>
+      </div>
     </div>
     <button class="btn" onclick="doName()">推荐名字</button>
     <div class="result" id="n-result" style="display:none"></div>
@@ -250,7 +258,9 @@
       <div class="form-group"><label>年</label><input type="number" id="d-year"></div>
       <div class="form-group"><label>月</label><input type="number" id="d-month"></div>
       <div class="form-group"><label>日</label><input type="number" id="d-day"></div>
-      <div class="form-group"><label>时</label><input type="number" id="d-hour" value="12"></div>
+      <div class="form-group"><label>时辰</label>
+        <select id="d-hour"><option value="0">子</option><option value="2">丑</option><option value="4">寅</option><option value="6">卯</option><option value="8">辰</option><option value="10">巳</option><option value="12" selected>午</option><option value="14">未</option><option value="16">申</option><option value="18">酉</option><option value="20">戌</option><option value="22">亥</option></select>
+      </div>
     </div>
     <button class="btn" onclick="doDeep()">生成报告</button>
     <div class="result" id="d-result" style="display:none"></div>
@@ -616,7 +626,7 @@ function initCompareRows() {
       <input type="number" id="cmp${i}-year" placeholder="年" style="width:60px">
       <input type="number" id="cmp${i}-month" placeholder="月" style="width:45px">
       <input type="number" id="cmp${i}-day" placeholder="日" style="width:45px">
-      <input type="number" id="cmp${i}-hour" value="12" style="width:45px">
+      <select id="cmp${i}-hour" style="padding:7px;border:1px solid #d4c4b0;border-radius:5px;font-size:13px"><option value="0">子</option><option value="2">丑</option><option value="4">寅</option><option value="6">卯</option><option value="8">辰</option><option value="10">巳</option><option value="12" selected>午</option><option value="14">未</option><option value="16">申</option><option value="18">酉</option><option value="20">戌</option><option value="22">亥</option></select>
       <select id="cmp${i}-gender" style="padding:7px;border:1px solid #d4c4b0;border-radius:5px;font-size:13px"><option>男</option><option>女</option></select>
     </div>`;
   }
