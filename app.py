@@ -635,6 +635,44 @@ def select_day():
     return jsonify({'days': result, 'event': event})
 
 
+# ===================== 六十四卦 API =====================
+
+@app.route('/api/guas', methods=['GET'])
+def gua_list():
+    """64卦列表（免费）。"""
+    return jsonify(core.get_gua_list())
+
+
+@app.route('/api/gua/<name>', methods=['GET'])
+def gua_detail(name):
+    """单卦详情（免费）。"""
+    result = core.get_gua_detail(name)
+    if not result:
+        return jsonify({'error': '卦名不存在'}), 404
+    return jsonify(result)
+
+
+@app.route('/api/qigua', methods=['POST'])
+@login_required
+def qi_gua():
+    """梅花易数起卦（VIP）。"""
+    data = request.get_json()
+    try:
+        n1 = int(data['n1']); n2 = int(data['n2']); n3 = int(data['n3'])
+        if n1 <= 0 or n2 <= 0 or n3 <= 0:
+            return jsonify({'error': '请输入三个正整数'}), 400
+    except (ValueError, KeyError):
+        return jsonify({'error': '请输入三个数字'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '起卦解卦为VIP专属，浏览卦象免费', 'need_vip': True}), 403
+    try:
+        result = core.qigua(n1, n2, n3)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify(result)
+
+
 # ===================== 管理员 API =====================
 
 @app.route('/api/admin/stats', methods=['GET'])
