@@ -144,14 +144,19 @@
       VIP会员可解锁以下付费功能：<br>
       ✓ 深度命理报告（性格/事业/婚姻/健康/大运）<br>
       ✓ 合婚分析（生肖/五行/日柱/骨重四维详解）<br>
-      ✓ 更多功能持续更新中
+      ✓ 高级取名（双字名方案+三才五格）<br>
+      ✓ 多人对比（最多4人同时对比）
     </p>
     <div style="background:#f5f0e6;padding:12px;border-radius:8px;margin:12px 0;font-size:14px">
-      <b>月卡：9.9元</b>　<b>季卡：24.9元</b>　<b>年卡：79元</b><br>
-      <span style="color:#8a6d4b;font-size:12px">请添加管理员微信付款，付款后由管理员开通</span>
+      <b>月卡：<span id="price-monthly">9.9</span>元</b>　
+      <b>季卡：<span id="price-quarterly">24.9</span>元</b>　
+      <b>年卡：<span id="price-yearly">79</span>元</b>
     </div>
-    <p style="font-size:13px;color:#8a6d4b">付款后请联系管理员，提供你的用户名即可开通。</p>
-    <button class="btn" style="margin-top:10px" onclick="hideVipModal()">我知道了</button>
+    <div id="vip-contact" style="font-size:13px;color:#8a6d4b;line-height:1.8">
+      请联系管理员付款开通：<br>
+      <span id="contact-detail">加载中...</span>
+    </div>
+    <button class="btn" style="margin-top:10px" onclick="hideVipModal()">关闭</button>
   </div>
 </div>
 
@@ -400,20 +405,27 @@ async function doName() {
       const c = r.wuxing[w];
       wxHtml += `<div class="wuxing-bar"><span class="label">${w}</span><div class="bar"><div class="fill" style="width:${c*12.5}%"></div></div><span class="count">${c}</span></div>`;
     }
-    const singles = r.names.filter(n => n.length === r.surname.length + 1);
-    const doubles = r.names.filter(n => n.length === r.surname.length + 2);
-    el.innerHTML = `<div class="title">${r.surname}氏取名推荐</div>
+    let html = `<div class="title">${r.surname}氏取名推荐</div>
 四柱：${r.pillars.join(' ')}
 日主：${r.day_master}（${r.day_master_wuxing}）
 <span class="section">八字五行分布</span>
 ${wxHtml}
 <span class="section">喜用神</span>
 ${r.reason}
-<span class="section">推荐名字（单字名）</span>
-<div class="name-grid">${singles.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
-<span class="section">推荐名字（双字名）</span>
-<div class="name-grid">${doubles.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
+<span class="section">推荐名字（单字名·免费）</span>
+<div class="name-grid">${r.single_names.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>`;
+    if (r.locked) {
+      html += `<div class="vip-lock">
+        <h4>VIP专属 · 双字名推荐</h4>
+        <p>双字名方案、三才五格分析、名字寓意详解需开通VIP</p>
+        <button class="btn" onclick="showVipModal()">开通VIP查看双字名</button>
+      </div>`;
+    } else {
+      html += `<span class="section">推荐名字（双字名·VIP）</span>
+<div class="name-grid">${r.double_names.map(n=>`<div class="name-item" onclick="copyText('${n}')">${n}</div>`).join('')}</div>
 （点击名字可复制，仅供参考）`;
+    }
+    el.innerHTML = html;
   } catch(e) { alert(e.message); }
 }
 
@@ -514,7 +526,19 @@ async function doCompare() {
       songsHtml += `【${p.name}】${p.standard_text}（${p.gender}命）\n${p.song.substring(0, 80)}…\n\n`;
     });
     el.innerHTML = `<div class="title">多人生辰对比（按标准骨重排序）</div>${tableHtml}\n${songsHtml}`;
-  } catch(e) { alert(e.message); }
+  } catch(e) {
+    if (e.message && e.message.includes('VIP')) {
+      const el = document.getElementById('cmp-result');
+      el.style.display = 'block';
+      el.innerHTML = `<div class="vip-lock">
+        <h4>VIP专属 · 多人对比</h4>
+        <p>普通用户最多对比2人，开通VIP可对比4人</p>
+        <button class="btn" onclick="showVipModal()">开通VIP对比4人</button>
+      </div>`;
+    } else {
+      alert(e.message);
+    }
+  }
 }
 
 // ===== 历史记录 =====
@@ -567,7 +591,24 @@ function renderJiazi() {
 // ===== 工具 =====
 function val(id) { return document.getElementById(id).value; }
 
-function showVipModal() { document.getElementById('vip-modal').style.display = 'flex'; }
+async function showVipModal() {
+  document.getElementById('vip-modal').style.display = 'flex';
+  try {
+    const s = await api('/api/settings');
+    document.getElementById('price-monthly').textContent = s.vip_monthly || '9.9';
+    document.getElementById('price-quarterly').textContent = s.vip_quarterly || '24.9';
+    document.getElementById('price-yearly').textContent = s.vip_yearly || '79';
+    let contact = '';
+    if (s.admin_wechat) contact += `微信：${s.admin_wechat}<br>`;
+    if (s.admin_qq) contact += `QQ：${s.admin_qq}<br>`;
+    if (s.admin_phone) contact += `电话：${s.admin_phone}<br>`;
+    if (s.admin_note) contact += s.admin_note;
+    if (!contact) contact = '请联系管理员开通（管理员尚未设置联系方式）';
+    document.getElementById('contact-detail').innerHTML = contact;
+  } catch(e) {
+    document.getElementById('contact-detail').textContent = '请联系管理员开通';
+  }
+}
 function hideVipModal() { document.getElementById('vip-modal').style.display = 'none'; }
 
 // 初始化

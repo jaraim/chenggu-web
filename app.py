@@ -61,6 +61,10 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
+        CREATE TABLE IF NOT EXISTS site_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
     """)
     # 兼容旧表：添加字段（如果不存在）
     for col, typ in [('is_admin', 'INTEGER DEFAULT 0'), ('is_active', 'INTEGER DEFAULT 1'),
@@ -69,8 +73,40 @@ def init_db():
             db.execute(f"ALTER TABLE users ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
             pass
+    # 初始化默认站点配置
+    defaults = {
+        'admin_wechat': '',
+        'admin_qq': '',
+        'admin_phone': '',
+        'admin_note': '请联系管理员开通VIP',
+        'vip_monthly': '9.9',
+        'vip_quarterly': '24.9',
+        'vip_yearly': '79',
+    }
+    for k, v in defaults.items():
+        db.execute("INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)", (k, v))
     db.commit()
     db.close()
+
+
+def get_setting(key, default=''):
+    """读取站点配置。"""
+    try:
+        db = get_db()
+        row = db.execute('SELECT value FROM site_settings WHERE key=?', (key,)).fetchone()
+        return row['value'] if row else default
+    except Exception:
+        return default
+
+
+def get_all_settings():
+    """读取全部站点配置。"""
+    try:
+        db = get_db()
+        rows = db.execute('SELECT key, value FROM site_settings').fetchall()
+        return {r['key']: r['value'] for r in rows}
+    except Exception:
+        return {}
 
 
 # 模块加载时自动建表（WSGI 模式下也能生效，修复注册报错）
@@ -290,6 +326,11 @@ def compare():
     people = data.get('people', [])
     if len(people) < 2:
         return jsonify({'error': '至少填写2人'}), 400
+    user = current_user()
+    vip = is_vip(user)
+    # 非VIP最多对比2人
+    if not vip and len(people) > 2:
+        return jsonify({'error': '普通用户最多对比2人，开通VIP可对比4人', 'need_vip': True}), 403
     results = []
     for pp in people:
         try:
@@ -334,13 +375,28 @@ def name_recommend():
         count, day_master, xi, reason, names = core.recommend_names(surname, gender, pillars)
     except Exception as e:
         return jsonify({'error': f'计算出错：{e}'}), 500
-    return jsonify({
+    user = current_user()
+    vip = is_vip(user)
+    single_names = [n for n in names if len(n) == len(surname) + 1]
+    double_names = [n for n in names if len(n) == len(surname) + 2]
+    result = {
         'surname': surname, 'gender': gender,
         'pillars': pillars,
         'wuxing': count, 'day_master': day_master,
         'day_master_wuxing': core.TIANGAN_WUXING[day_master],
-        'xi': xi, 'reason': reason, 'names': names,
-    })
+        'xi': xi, 'reason': reason,
+        'is_vip': vip,
+        'single_names': single_names,  # 单字名（免费）
+    }
+    if vip:
+        # VIP：双字名 + 更多方案
+        result['double_names'] = double_names
+        result['locked'] = False
+    else:
+        # 非VIP：双字名锁定
+        result['double_names'] = []
+        result['locked'] = True
+    return result
 
 
 # ===================== 合婚 API =====================
@@ -419,6 +475,26 @@ def deep():
 def jiazi():
     return jsonify([{'num': n, 'ganzhi': gz, 'shengxiao': sx, 'nayin': ny}
                     for n, gz, sx, ny in core.build_jiazi()])
+
+
+# ===================== 站点配置 API =====================
+
+@app.route('/api/settings', methods=['GET'])
+def settings():
+    """公开的站点配置（VIP价格、管理员联系方式）。"""
+    return jsonify(get_all_settings())
+
+
+@app.route('/api/admin/settings', methods=['POST'])
+@admin_required
+def update_settings():
+    """管理员修改站点配置。"""
+    data = request.get_json() or {}
+    db = get_db()
+    for k, v in data.items():
+        db.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", (k, str(v)))
+    db.commit()
+    return jsonify({'ok': True})
 
 
 # ===================== 管理员 API =====================

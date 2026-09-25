@@ -57,6 +57,21 @@
   </div>
 
   <div class="card">
+    <h2>站点设置</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">设置管理员联系方式和VIP价格，用户在"开通VIP"弹窗中会看到这些信息。</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>管理员微信</label><input id="set-wechat" placeholder="如：your_wechat"></div>
+      <div><label>管理员QQ</label><input id="set-qq" placeholder="如：123456789"></div>
+      <div><label>管理员电话</label><input id="set-phone" placeholder="如：13800138000"></div>
+      <div><label>备注说明</label><input id="set-note" placeholder="如：付款后请备注用户名"></div>
+      <div><label>VIP月卡价格(元)</label><input id="set-monthly" placeholder="9.9"></div>
+      <div><label>VIP季卡价格(元)</label><input id="set-quarterly" placeholder="24.9"></div>
+      <div><label>VIP年卡价格(元)</label><input id="set-yearly" placeholder="79"></div>
+    </div>
+    <button class="btn" style="margin-top:10px" onclick="saveSettings()">保存设置</button>
+  </div>
+
+  <div class="card">
     <h2>用户管理</h2>
     <table>
       <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>VIP</th><th>计算次数</th><th>注册时间</th><th>操作</th></tr></thead>
@@ -179,7 +194,37 @@ async function delHistory(hid) {
   loadHistory(); loadStats();
 }
 
-loadStats(); loadUsers(); loadHistory();
+async function loadSettings() {
+  try {
+    const s = await api('/api/settings');
+    document.getElementById('set-wechat').value = s.admin_wechat || '';
+    document.getElementById('set-qq').value = s.admin_qq || '';
+    document.getElementById('set-phone').value = s.admin_phone || '';
+    document.getElementById('set-note').value = s.admin_note || '';
+    document.getElementById('set-monthly').value = s.vip_monthly || '9.9';
+    document.getElementById('set-quarterly').value = s.vip_quarterly || '24.9';
+    document.getElementById('set-yearly').value = s.vip_yearly || '79';
+  } catch(e) {}
+}
+
+async function saveSettings() {
+  const data = {
+    admin_wechat: document.getElementById('set-wechat').value,
+    admin_qq: document.getElementById('set-qq').value,
+    admin_phone: document.getElementById('set-phone').value,
+    admin_note: document.getElementById('set-note').value,
+    vip_monthly: document.getElementById('set-monthly').value,
+    vip_quarterly: document.getElementById('set-quarterly').value,
+    vip_yearly: document.getElementById('set-yearly').value,
+  };
+  await fetch('/api/admin/settings', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  alert('设置已保存');
+}
+
+loadStats(); loadUsers(); loadHistory(); loadSettings();
 </script>
 </body>
 </html>
