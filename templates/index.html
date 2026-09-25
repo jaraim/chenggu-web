@@ -171,6 +171,7 @@
   <div class="tab" onclick="showTab('name-eval')">姓名测评</div>
   <div class="tab" onclick="showTab('zeri')">黄道吉日</div>
   <div class="tab" onclick="showTab('gua')">六十四卦</div>
+  <div class="tab" onclick="showTab('lucky')">今日吉数</div>
   <div class="tab" onclick="showTab('compare')">多人对比</div>
   <div class="tab" onclick="showTab('history')">历史记录</div>
   <div class="tab" onclick="showTab('jiazi')">六十甲子</div>
@@ -419,6 +420,22 @@
     </div>
     <button class="btn" onclick="doQiGua()">起卦</button>
     <div id="qg-result" style="display:none;margin-top:15px"></div>
+  </div>
+</div>
+
+<!-- ===== 今日吉数（免费） ===== -->
+<div class="panel" id="panel-lucky">
+  <div class="card">
+    <h2>今日吉数查询</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">输入日期，按河图五行数理推算当天1-49最佳吉数。按当日日柱五行，比和生扶为吉、克我为忌。</p>
+    <div class="form-row">
+      <div class="form-group"><label>年份</label><input type="number" id="lk-year" placeholder="如2026"></div>
+      <div class="form-group"><label>月份</label><input type="number" id="lk-month" placeholder="1-12"></div>
+      <div class="form-group"><label>日期</label><input type="number" id="lk-day" placeholder="1-31"></div>
+      <div class="form-group"><label></label><button class="btn" onclick="useToday()">今天</button></div>
+    </div>
+    <button class="btn" onclick="doLucky()">查询吉数</button>
+    <div id="lk-result" style="display:none;margin-top:15px"></div>
   </div>
 </div>
 
@@ -1042,6 +1059,59 @@ async function doQiGua() {
   } catch(e) {
     if (e.message && e.message.includes('VIP')) { showVipModal(); } else { alert(e.message); }
   }
+}
+
+// ===== 今日吉数 =====
+function useToday() {
+  const now = new Date();
+  document.getElementById('lk-year').value = now.getFullYear();
+  document.getElementById('lk-month').value = now.getMonth() + 1;
+  document.getElementById('lk-day').value = now.getDate();
+}
+
+async function doLucky() {
+  const body = {year: +val('lk-year'), month: +val('lk-month'), day: +val('lk-day')};
+  if (!body.year || !body.month || !body.day) { alert('请填写年月日'); return; }
+  try {
+    const r = await api('/api/lucky-numbers', 'POST', body);
+    const el = document.getElementById('lk-result');
+    el.style.display = 'block';
+    // 五行分组
+    let groupsHtml = '';
+    const colors = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'};
+    for (const w of ['金','木','水','火','土']) {
+      const nums = r.groups[w].join(' ');
+      const isJi = (w === r.day_wuxing || w === r.sheng_wo);
+      groupsHtml += `<div style="margin:6px 0;font-size:13px">
+  <span style="display:inline-block;width:60px;font-weight:bold;color:${colors[w]}">${w}</span>
+  <span style="color:${isJi ? '#27ae60' : '#999'}">${nums}</span>${isJi ? ' <span style="color:#27ae60;font-size:11px">吉</span>' : ''}
+</div>`;
+    }
+    // 最佳吉数
+    const bestHtml = r.best.map(n => {
+      const luck = r.number_luck[n] || '';
+      const w = Object.keys(r.groups).find(k => r.groups[k].includes(n));
+      return `<div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:10px;padding:10px;text-align:center;min-width:70px">
+  <div style="font-size:24px;font-weight:bold;color:#5a3d2b">${n}</div>
+  <div style="font-size:11px;color:#8a6d4b">${w}</div>
+  <div style="font-size:10px;color:#999;margin-top:2px">${luck.slice(0,10)}</div>
+</div>`;
+    }).join('');
+    el.innerHTML = `<div class="title">${r.date} · 当日吉数</div>
+<div style="background:#faf6ee;border-radius:8px;padding:15px;text-align:center">
+  <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）</div>
+  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生扶：<b>${r.sheng_wo}</b>　克我：<b style="color:#e74c3c">${r.ke_wo}</b></div>
+</div>
+<span class="section">最佳吉数 TOP ${r.best.length}</span>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
+<span class="section">全部吉数（${r.ji_numbers.length}个）</span>
+<div style="font-size:15px;margin:8px 0;line-height:1.9">${r.ji_numbers.map(n=>`<span style="display:inline-block;background:#f0e8d8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#5a3d2b">${n}</span>`).join('')}</div>
+<span class="section">1-49五行分组</span>
+${groupsHtml}
+<span class="section">当日提示</span>
+${r.tips.map((t,i)=>`${i+1}. ${t}`).join('\n')}
+<p style="font-size:11px;color:#aaa;margin-top:10px">内容基于传统数理文化，仅供娱乐参考，不构成任何投注建议。</p>`;
+  } catch(e) { alert(e.message); }
 }
 
 // 初始化

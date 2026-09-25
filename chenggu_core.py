@@ -1632,3 +1632,128 @@ def qigua(n1, n2, n3):
         'dong_yao_tip': DONGYAO_TIPS[dong],
         'shang_gua': shang, 'xia_gua': xia,
     }
+
+
+# ===================== 十二、数字五行与当日吉数 =====================
+
+# 河图数理：个位数五行（1/6水、2/7火、3/8木、4/9金、5/0土）
+def get_number_wuxing(n):
+    """返回数字 n 的五行属性（按河图个位数数理）。"""
+    m = n % 10
+    if m in (1, 6):
+        return '水'
+    if m in (2, 7):
+        return '火'
+    if m in (3, 8):
+        return '木'
+    if m in (4, 9):
+        return '金'
+    return '土'  # 5、0
+
+
+def number_groups():
+    """返回1-49数字按五行分组。"""
+    groups = {w: [] for w in WUXING_ORDER}
+    for n in range(1, 50):
+        groups[get_number_wuxing(n)].append(n)
+    return groups
+
+
+# 数字吉凶寓意（民俗参考）
+NUMBER_LUCK = {
+    1: '一生一世，万物之始', 2: '成双成对，好事成双', 3: '三阳开泰，生生不息',
+    4: '四平八稳，四季平安', 5: '五福临门，五谷丰登', 6: '六六大顺，顺风顺水',
+    7: '七上八下，七星高照', 8: '八方来财，发发发', 9: '长长久久，九五之尊',
+    10: '十全十美，圆圆满满', 11: '一心一意，独占鳌头', 12: '十二生肖，周全圆满',
+    13: '一生一世（谐音），好彩头', 14: '一世平安', 15: '一五一十，月圆人圆',
+    16: '一路顺风，六六大顺', 17: '一起发财，一七得七', 18: '要发要发',
+    19: '要久要久，长长久久', 20: '爱您圆满', 21: '爱你一世', 22: '好事成双成对',
+    23: '爱财爱才', 24: '爱到发紫，诸事顺遂', 25: '爱我一世', 26: '爱路畅通',
+    27: '爱妻长久', 28: '爱发爱发', 29: '爱久长', 30: '三生有幸，圆满如意',
+    31: '三一一心一意', 32: '生生发发', 33: '生生不息', 34: '生生世世',
+    35: '生我生财', 36: '三六九等，顺顺', 37: '生气发财', 38: '想发想发',
+    39: '三九严寒，长久', 40: '事事圆满', 41: '死期（忌）', 42: '死爱（忌）',
+    43: '死三（忌）', 44: '死死（忌）', 45: '死我（忌）', 46: '死路（忌）',
+    47: '死妻（忌）', 48: '死发（忌）', 49: '死久（忌）',
+}
+
+
+def lucky_numbers(year, month, day):
+    """
+    输入年月日，返回当天最佳吉数（1-49）。
+    原理：当天日柱干支 → 日主五行 → 比和+生扶为吉，克我为忌。
+    """
+    import datetime
+    try:
+        datetime.date(year, month, day)
+    except ValueError:
+        return {'error': '日期无效'}
+
+    gz = get_day_ganzhi(year, month, day)
+    day_gan = gz[0]
+    day_zhi = gz[1]
+    day_wuxing = TIANGAN_WUXING[day_gan]
+    shengxiao = SHENGXIAO_NAME[day_zhi]
+
+    # 生我者（印）和克我者（官杀）
+    sheng_wo = [w for w in WUXING_ORDER if WUXING_SHENG[w] == day_wuxing]
+    ke_wo = [w for w in WUXING_ORDER if WUXING_KE[w] == day_wuxing]
+    sheng_wo = sheng_wo[0] if sheng_wo else day_wuxing
+    ke_wo = ke_wo[0] if ke_wo else day_wuxing
+
+    # 吉数：比和（日主五行）+ 生扶（印五行）
+    groups = number_groups()
+    zhu_ji = groups[day_wuxing]      # 主吉数（比和）
+    ci_ji = groups[sheng_wo]         # 次吉数（生扶）
+    ji_numbers = zhu_ji + ci_ji
+    ji_numbers = sorted(ji_numbers)
+
+    # 忌数：克我者
+    ji_wuxing = groups[ke_wo]
+
+    # 最佳吉数TOP：吉数中取寓意好的优先（避开4结尾的谐音忌讳）
+    def luck_rank(n):
+        base = 0
+        if n % 10 == 8:
+            base += 30  # 8最旺
+        elif n % 10 == 6:
+            base += 25
+        elif n % 10 == 9:
+            base += 20
+        elif n % 10 == 5:
+            base += 15
+        elif n % 10 == 0:
+            base += 10
+        if n % 10 == 4:
+            base -= 30  # 4谐音忌讳
+        if n >= 40:
+            base -= 15  # 40+谐音忌讳
+        if n % 7 == 0:
+            base += 10  # 7的倍数
+        if n % 8 == 0:
+            base += 15  # 8的倍数
+        return base
+
+    # 最佳吉数：从40以下选取（40+谐音均忌讳），避开个位4
+    best = sorted([n for n in ji_numbers if n < 40], key=lambda n: (-luck_rank(n), n))[:8]
+
+    return {
+        'date': f'{year}年{month}月{day}日',
+        'ganzhi': gz, 'shengxiao': shengxiao,
+        'day_wuxing': day_wuxing,
+        'sheng_wo': sheng_wo,
+        'ke_wo': ke_wo,
+        'zhu_ji': zhu_ji,           # 主吉数（比和）
+        'ci_ji': ci_ji,             # 次吉数（生扶）
+        'ji_numbers': ji_numbers,   # 全部吉数
+        'ji_wuxing': ji_wuxing,     # 忌数（克我）
+        'best': best,               # 最佳吉数TOP8
+        'groups': groups,           # 1-49五行分组
+        'number_luck': NUMBER_LUCK,
+        'tips': [
+            f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}',
+            f'比和{day_wuxing}与生扶{sheng_wo}之数为吉，主吉数为：{zhu_ji[0]}-{zhu_ji[-1]}',
+            f'克制日主的{ke_wo}属性数字当日宜谨慎使用',
+            '以上仅供参考娱乐，不构成任何投注建议',
+        ],
+    }

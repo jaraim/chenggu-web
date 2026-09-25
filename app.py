@@ -673,6 +673,25 @@ def qi_gua():
     return jsonify(result)
 
 
+# ===================== 当日吉数 API（免费） =====================
+
+@app.route('/api/lucky-numbers', methods=['POST'])
+def lucky_numbers():
+    """输入年月日，返回当天最佳吉数（1-49五行）。"""
+    data = request.get_json()
+    try:
+        y = int(data['year']); m = int(data['month']); d = int(data['day'])
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的年月日'}), 400
+    try:
+        result = core.lucky_numbers(y, m, d)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    if 'error' in result:
+        return jsonify(result), 400
+    return jsonify(result)
+
+
 # ===================== 管理员 API =====================
 
 @app.route('/api/admin/stats', methods=['GET'])
