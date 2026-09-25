@@ -1083,3 +1083,284 @@ def name_evaluation(surname, given_name, pillars):
         'suggestions': suggestions,
         'meanings': [get_char_meaning(c) for c in given_name],
     }
+
+
+# ===================== 九、八字详批 =====================
+
+# 地支藏干
+DIZHI_CANGGAN = {
+    '子': ['癸'], '丑': ['己', '癸', '辛'], '寅': ['甲', '丙', '戊'],
+    '卯': ['乙'], '辰': ['戊', '乙', '癸'], '巳': ['丙', '庚', '戊'],
+    '午': ['丁', '己'], '未': ['己', '丁', '乙'], '申': ['庚', '壬', '戊'],
+    '酉': ['辛'], '戌': ['戊', '辛', '丁'], '亥': ['壬', '甲'],
+}
+
+# 十神描述
+SHISHEN_DESC = {
+    '比肩': '兄弟朋友，同辈竞争，代表自我意识和独立性',
+    '劫财': '兄弟姐妹，竞争破财，代表冲动和争夺',
+    '食神': '才华表达，口福享受，代表创造力和温和',
+    '伤官': '才华外露，叛逆创新，代表个性和艺术',
+    '偏财': '意外之财，父亲情人，代表灵活和投机',
+    '正财': '正当收入，妻子正缘，代表稳重和务实',
+    '七杀': '权威压力，灾祸小人，代表魄力和冒险',
+    '正官': '事业官位，丈夫名声，代表责任和规则',
+    '偏印': '偏门学问，继母贵人，代表孤独和思考',
+    '正印': '学业文凭，母亲贵人，代表仁慈和保护',
+}
+
+
+def get_shishen(day_gan, other_gan):
+    """获取两个天干之间的十神关系。"""
+    return SHISHEN.get((day_gan, other_gan), '比肩')
+
+
+def bazi_detail(solar_year, solar_month, solar_day, hour, gender):
+    """
+    八字详批：十神分析、用神忌神、大运排盘。
+    """
+    p = palace_bone_weight(solar_year, solar_month, solar_day, hour)
+    pillars = [p['year_p'], p['month_p'], p['day_p'], p['hour_p']]
+    day_gan = pillars[2][0]
+    day_zhi = pillars[2][1]
+
+    # 1. 十神分析（天干）
+    tiangan_shishen = []
+    pillar_names = ['年柱', '月柱', '日柱', '时柱']
+    for i, gz in enumerate(pillars):
+        gan = gz[0]
+        zhi = gz[1]
+        ss = get_shishen(day_gan, gan)
+        # 地支藏干十神
+        canggan = DIZHI_CANGGAN.get(zhi, [])
+        canggan_shishen = [(c, get_shishen(day_gan, c)) for c in canggan]
+        tiangan_shishen.append({
+            'pillar': pillar_names[i], 'ganzhi': gz,
+            'gan_shishen': ss, 'gan_shishen_desc': SHISHEN_DESC.get(ss, ''),
+            'zhi': zhi, 'canggan': canggan_shishen,
+        })
+
+    # 2. 五行统计（含藏干）
+    count = {w: 0 for w in WUXING_ORDER}
+    for gz in pillars:
+        count[TIANGAN_WUXING[gz[0]]] += 1
+        count[DIZHI_WUXING[gz[1]]] += 1
+    # 藏干加权（本气1，中气0.5，余气0.3）
+    for gz in pillars:
+        canggan = DIZHI_CANGGAN.get(gz[1], [])
+        for idx, c in enumerate(canggan):
+            weight = 1.0 if idx == 0 else (0.5 if idx == 1 else 0.3)
+            count[TIANGAN_WUXING[c]] += weight
+
+    dm_wuxing = TIANGAN_WUXING[day_gan]
+
+    # 3. 日主强弱判断
+    # 生扶日主：印星（生我）+ 比劫（同我）
+    # 克泄日主：官杀（克我）+ 食伤（我生）+ 财星（我克）
+    shengfu = 0  # 生扶力量
+    kexie = 0    # 克泄力量
+    for gz in pillars:
+        w = TIANGAN_WUXING[gz[0]]
+        if w == dm_wuxing:
+            shengfu += 1  # 比劫
+        elif WUXING_SHENG.get(w) == dm_wuxing:
+            shengfu += 1  # 印星（w生日主）
+        else:
+            kexie += 1
+    # 月令影响最大
+    month_zhi_wuxing = DIZHI_WUXING[pillars[1][1]]
+    if month_zhi_wuxing == dm_wuxing or WUXING_SHENG.get(month_zhi_wuxing) == dm_wuxing:
+        shengfu += 2
+    else:
+        kexie += 2
+
+    if shengfu > kexie + 1:
+        strength = '偏强'
+    elif kexie > shengfu + 1:
+        strength = '偏弱'
+    else:
+        strength = '中和'
+
+    # 4. 用神忌神
+    if strength == '偏强':
+        # 身强喜克泄耗：官杀、食伤、财星
+        yong_options = [w for w in WUXING_ORDER if w != dm_wuxing and WUXING_SHENG.get(dm_wuxing) != w]
+        yongshen = yong_options[0] if yong_options else '金'
+        jishen = dm_wuxing
+        jishen_desc = f'日主{dm_wuxing}偏强，喜{yongshen}来克泄耗，忌{jishen}再来生扶'
+    elif strength == '偏弱':
+        # 身弱喜生扶：印星、比劫
+        yongshen = WUXING_SHENG.get(dm_wuxing, '木')  # 印星
+        jishen_options = [w for w in WUXING_ORDER if w != dm_wuxing and WUXING_SHENG.get(dm_wuxing) != w]
+        jishen = jishen_options[0] if jishen_options else '金'
+        jishen_desc = f'日主{dm_wuxing}偏弱，喜{yongshen}（印星）生扶，忌{jishen}克泄耗'
+    else:
+        yongshen = '财星'
+        jishen = '比劫'
+        jishen_desc = f'日主{dm_wuxing}中和，以财星为用，食伤为辅'
+
+    # 5. 大运排盘
+    # 阳年生男、阴年生女顺排；阴年生男、阳年生女逆排
+    year_gan = pillars[0][0]
+    is_yang = TIANGAN.index(year_gan) % 2 == 0  # 甲丙戊庚壬为阳
+    is_male = (gender == '男')
+    shun = (is_yang and is_male) or (not is_yang and not is_male)
+
+    # 起运岁数（简化：3天=1岁，从出生到最近节气的天数）
+    # 这里简化为固定起运年龄，实际应精确计算节气
+    start_age = 4 if shun else 6  # 简化估算
+
+    # 从月柱起运
+    month_gan_idx = TIANGAN.index(pillars[1][0])
+    month_zhi_idx = DIZHI.index(pillars[1][1])
+    dayun = []
+    for i in range(8):
+        if shun:
+            g_idx = (month_gan_idx + 1 + i) % 10
+            z_idx = (month_zhi_idx + 1 + i) % 12
+        else:
+            g_idx = (month_gan_idx - 1 - i) % 10
+            z_idx = (month_zhi_idx - 1 - i) % 12
+        gz = TIANGAN[g_idx] + DIZHI[z_idx]
+        ss = get_shishen(day_gan, TIANGAN[g_idx])
+        age_start = start_age + i * 10
+        age_end = age_start + 9
+        dayun.append({
+            'ganzhi': gz, 'shishen': ss,
+            'age_range': f'{age_start}-{age_end}岁',
+            'age_start': age_start,
+        })
+
+    # 6. 当前大运
+    import datetime
+    current_age = datetime.datetime.now().year - solar_year
+    current_dayun = None
+    for dy in dayun:
+        if dy['age_start'] <= current_age < dy['age_start'] + 10:
+            current_dayun = dy
+            break
+
+    return {
+        'pillars': pillars, 'pillar_names': pillar_names,
+        'day_master': day_gan, 'day_master_wuxing': dm_wuxing,
+        'strength': strength, 'shengfu': round(shengfu, 1), 'kexie': round(kexie, 1),
+        'tiangan_shishen': tiangan_shishen,
+        'wuxing_count': {k: round(v, 1) for k, v in count.items()},
+        'yongshen': yongshen, 'jishen': jishen, 'jishen_desc': jishen_desc,
+        'dayun': dayun, 'current_dayun': current_dayun,
+        'start_age': start_age, 'direction': '顺排' if shun else '逆排',
+    }
+
+
+# ===================== 十、择日功能 =====================
+
+# 建除十二神
+JIANCHU = ['建', '除', '满', '平', '定', '执', '破', '危', '成', '收', '开', '闭']
+
+# 黄道黑道十二神
+HUANGDAO = ['青龙', '明堂', '天刑', '朱雀', '金匮', '天德', '白虎', '玉堂', '天牢', '玄武', '司命', '勾陈']
+HUANGDAO_JI = {'青龙', '明堂', '金匮', '天德', '玉堂', '司命'}  # 黄道吉日
+
+# 宜忌（简化版，基于建除十二神）
+JIANCHU_YIJI = {
+    '建': {'yi': ['出行', '上任', '临政', '亲民'], 'ji': ['动土', '开仓', '嫁娶']},
+    '除': {'yi': ['除服', '疗病', '出行', '拆卸'], 'ji': ['嫁娶', '动土', '安葬']},
+    '满': {'yi': ['祭祀', '祈福', '进人口', '立券'], 'ji': ['出行', '安葬', '移徙']},
+    '平': {'yi': ['修造', '动土', '平治道涂'], 'ji': ['嫁娶', '安葬', '祈福']},
+    '定': {'yi': ['祭祀', '祈福', '嫁娶', '冠笄'], 'ji': ['出行', '词讼', '打官司']},
+    '执': {'yi': ['捕捉', '狩猎', '订婚', '祭祀'], 'ji': ['开市', '出行', '移徙']},
+    '破': {'yi': ['破屋', '坏垣', '求医', '破贼'], 'ji': ['嫁娶', '动土', '开市', '安葬']},
+    '危': {'yi': ['祭祀', '安床', '破屋'], 'ji': ['登山', '远行', '乘船', '嫁娶']},
+    '成': {'yi': ['嫁娶', '开市', '立券', '签约', '入学', '求嗣'], 'ji': ['诉讼', '打官司']},
+    '收': {'yi': ['进人口', '纳财', '贸易', '收货'], 'ji': ['出行', '安葬', '动土']},
+    '开': {'yi': ['祭祀', '祈福', '求嗣', '开市', '出行', '嫁娶', '搬家'], 'ji': ['安葬', '破土']},
+    '闭': {'yi': ['筑堤', '填塞', '埋葬'], 'ji': ['开市', '嫁娶', '出行', '动土']},
+}
+
+# 事项对应的宜神
+EVENT_PREFER = {
+    '结婚': ['成', '开', '定', '建'],
+    '开业': ['成', '开', '满', '收'],
+    '搬家': ['开', '成', '定', '满'],
+    '出行': ['建', '除', '满', '开', '成'],
+    '安葬': ['除', '满', '收', '闭'],
+}
+
+
+def get_day_ganzhi(year, month, day):
+    """计算某日的干支（以1900-01-01为甲戌日基准）。"""
+    import datetime
+    base = datetime.date(1900, 1, 1)
+    target = datetime.date(year, month, day)
+    delta = (target - base).days
+    gan_idx = (10 + delta) % 10  # 1900-01-01是甲戌，甲=0
+    zhi_idx = (10 + delta) % 12  # 戌=10
+    return TIANGAN[gan_idx] + DIZHI[zhi_idx]
+
+
+def select_days(year, month, event='结婚', count=10):
+    """
+    择日：查询指定年月的黄道吉日。
+    event: 结婚/开业/搬家/出行/安葬
+    返回吉日列表。
+    """
+    import calendar
+    import datetime
+    days_in_month = calendar.monthrange(year, month)[1]
+    prefer = EVENT_PREFER.get(event, ['成', '开'])
+
+    results = []
+    for day in range(1, days_in_month + 1):
+        date = datetime.date(year, month, day)
+        gz = get_day_ganzhi(year, month, day)
+        day_zhi = gz[1]
+
+        # 建除十二神：以月支为基准，日支对应
+        # 正月建寅，二月建卯...
+        month_zhi_idx = (month + 1) % 12  # 正月=寅(2)，简化
+        day_zhi_idx = DIZHI.index(day_zhi)
+        jianchu_idx = (day_zhi_idx - month_zhi_idx) % 12
+        jianchu = JIANCHU[jianchu_idx]
+
+        # 黄道黑道：以日支推算时支，简化用日支直接对应
+        huangdao_idx = day_zhi_idx
+        huangdao = HUANGDAO[huangdao_idx]
+        is_huangdao = huangdao in HUANGDAO_JI
+
+        # 宜忌
+        yiji = JIANCHU_YIJI.get(jianchu, {'yi': [], 'ji': []})
+
+        # 评分
+        score = 0
+        if is_huangdao:
+            score += 3
+        if jianchu in prefer:
+            score += 3
+        if event in yiji['yi']:
+            score += 2
+        if event in yiji['ji']:
+            score -= 3
+        # 周末加分
+        if date.weekday() >= 5:
+            score += 1
+
+        weekday_names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+
+        results.append({
+            'date': f'{year}年{month}月{day}日',
+            'month': month, 'day': day,
+            'weekday': weekday_names[date.weekday()],
+            'ganzhi': gz,
+            'jianchu': jianchu,
+            'huangdao': huangdao,
+            'is_huangdao': is_huangdao,
+            'yi': yiji['yi'],
+            'ji': yiji['ji'],
+            'score': score,
+            'suitable': event in yiji['yi'],
+            'unsuitable': event in yiji['ji'],
+        })
+
+    # 按评分排序，取最高分的
+    results.sort(key=lambda x: (-x['score'], x['day']))
+    return results[:count]

@@ -592,6 +592,49 @@ def name_eval():
     return jsonify(result)
 
 
+# ===================== 八字详批 API（VIP） =====================
+
+@app.route('/api/bazi-detail', methods=['POST'])
+@login_required
+def bazi_detail():
+    data = request.get_json()
+    try:
+        y = int(data['year']); m = int(data['month']); d = int(data['day'])
+        h = int(data.get('hour', 12)); gender = data.get('gender', '男')
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的数字'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '此功能为VIP专属', 'need_vip': True}), 403
+    try:
+        result = core.bazi_detail(y, m, d, h, gender)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify(result)
+
+
+# ===================== 择日 API（VIP） =====================
+
+@app.route('/api/select-day', methods=['POST'])
+@login_required
+def select_day():
+    data = request.get_json()
+    try:
+        y = int(data['year']); m = int(data['month'])
+        event = data.get('event', '结婚')
+        count = int(data.get('count', 10))
+    except (ValueError, KeyError):
+        return jsonify({'error': '请填写有效的年月'}), 400
+    user = current_user()
+    if not is_vip(user):
+        return jsonify({'error': '此功能为VIP专属', 'need_vip': True}), 403
+    try:
+        result = core.select_days(y, m, event, count)
+    except Exception as e:
+        return jsonify({'error': f'计算出错：{e}'}), 500
+    return jsonify({'days': result, 'event': event})
+
+
 # ===================== 管理员 API =====================
 
 @app.route('/api/admin/stats', methods=['GET'])
