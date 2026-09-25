@@ -81,6 +81,33 @@
   .compare-row input { padding: 7px; border: 1px solid #d4c4b0; border-radius: 5px; font-size: 13px; }
   .compare-row .idx { width: 24px; text-align: center; font-weight: bold; color: #b08968; }
   .empty { text-align: center; color: #aaa; padding: 30px; font-size: 14px; }
+  .vip-badge {
+    background: linear-gradient(135deg, #f1c40f, #e67e22);
+    color: #fff; padding: 3px 10px; border-radius: 10px;
+    font-size: 12px; font-weight: bold;
+  }
+  .vip-btn {
+    background: linear-gradient(135deg, #f1c40f, #e67e22);
+    color: #fff; padding: 4px 12px; border-radius: 6px;
+    font-size: 12px; cursor: pointer; font-weight: bold;
+  }
+  .vip-btn:hover { opacity: 0.9; }
+  .vip-lock {
+    background: #fef9e7; border: 1px dashed #f1c40f; border-radius: 8px;
+    padding: 20px; text-align: center; margin: 10px 0;
+  }
+  .vip-lock h4 { color: #e67e22; margin-bottom: 8px; }
+  .vip-lock p { font-size: 13px; color: #8a6d4b; margin-bottom: 10px; }
+  .modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: flex; align-items: center;
+    justify-content: center; z-index: 1000;
+  }
+  .modal-content {
+    background: #fffdf7; border-radius: 12px; padding: 24px;
+    max-width: 380px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .modal-content h3 { color: #5a3d2b; margin-bottom: 8px; }
   .wuxing-bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
   .wuxing-bar .label { width: 30px; font-weight: bold; }
   .wuxing-bar .bar { flex: 1; height: 18px; background: #eee; border-radius: 4px; overflow: hidden; }
@@ -100,7 +127,31 @@
   <h1>称骨算命</h1>
   <div class="user">
     <span id="username">{{ username }}</span>
+    {% if is_vip %}
+      <span class="vip-badge">VIP</span>
+    {% else %}
+      <span class="vip-btn" onclick="showVipModal()">开通VIP</span>
+    {% endif %}
     <button onclick="logout()">退出</button>
+  </div>
+</div>
+
+<!-- VIP开通弹窗 -->
+<div id="vip-modal" class="modal" style="display:none">
+  <div class="modal-content">
+    <h3>开通VIP会员</h3>
+    <p style="margin:12px 0;color:#666;font-size:14px;line-height:1.8">
+      VIP会员可解锁以下付费功能：<br>
+      ✓ 深度命理报告（性格/事业/婚姻/健康/大运）<br>
+      ✓ 合婚分析（生肖/五行/日柱/骨重四维详解）<br>
+      ✓ 更多功能持续更新中
+    </p>
+    <div style="background:#f5f0e6;padding:12px;border-radius:8px;margin:12px 0;font-size:14px">
+      <b>月卡：9.9元</b>　<b>季卡：24.9元</b>　<b>年卡：79元</b><br>
+      <span style="color:#8a6d4b;font-size:12px">请添加管理员微信付款，付款后由管理员开通</span>
+    </div>
+    <p style="font-size:13px;color:#8a6d4b">付款后请联系管理员，提供你的用户名即可开通。</p>
+    <button class="btn" style="margin-top:10px" onclick="hideVipModal()">我知道了</button>
   </div>
 </div>
 
@@ -304,14 +355,21 @@ async function doMarriage() {
     const r = await api('/api/marriage', 'POST', body);
     const el = document.getElementById('m-result');
     el.style.display = 'block';
-    el.innerHTML = `<div class="title">${r.name1} 与 ${r.name2} 合婚分析</div>
+    let html = `<div class="title">${r.name1} 与 ${r.name2} 合婚分析</div>
 <div class="score-text">${r.score} 分 · ${r.level}</div>
 <div class="score-bar"><div class="score-fill" style="width:${r.score}%"></div></div>
 <span class="section">【生肖配对】(${r.shengxiao_score}分)</span>
 ${r.shengxiao}
 <span class="section">【五行互补】(${r.wuxing_score}分)</span>
-${r.wuxing}
-两人五行合计：金${r.wuxing_combined.金} 木${r.wuxing_combined.木} 水${r.wuxing_combined.水} 火${r.wuxing_combined.火} 土${r.wuxing_combined.土}
+${r.wuxing}`;
+    if (r.locked) {
+      html += `<div class="vip-lock">
+        <h4>VIP专属内容</h4>
+        <p>日柱关系、骨重匹配、综合建议等完整分析需开通VIP</p>
+        <button class="btn" onclick="showVipModal()">开通VIP查看完整报告</button>
+      </div>`;
+    } else {
+      html += `两人五行合计：金${r.wuxing_combined.金} 木${r.wuxing_combined.木} 水${r.wuxing_combined.水} 火${r.wuxing_combined.火} 土${r.wuxing_combined.土}
 <span class="section">【日柱关系】(${r.rizhu_score}分)</span>
 ${r.rizhu}
 <span class="section">【骨重匹配】(${r.guzhong_score}分)</span>
@@ -321,6 +379,8 @@ ${r.guzhong}
 ${r.advice}
 甲方四柱：${r.p1_pillars.join(' ')}
 乙方四柱：${r.p2_pillars.join(' ')}`;
+    }
+    el.innerHTML = html;
   } catch(e) { alert(e.message); }
 }
 
@@ -377,7 +437,7 @@ async function doDeep() {
       const c = r.wuxing_count[w];
       wxHtml += `<div class="wuxing-bar"><span class="label">${w}</span><div class="bar"><div class="fill" style="width:${c*12.5}%"></div></div><span class="count">${c}</span></div>`;
     }
-    el.innerHTML = `<div class="title">${r.name} · 深度命理报告</div>
+    let html = `<div class="title">${r.name} · 深度命理报告</div>
 公历：${r.solar}　性别：${r.gender}命
 农历：${r.lunar}
 四柱：${r.pillars.join(' ')}
@@ -387,8 +447,15 @@ async function doDeep() {
 日主：${r.day_master}（${r.day_master_wuxing}）
 ${wxHtml}
 <span class="section">【性格特征】</span>
-${r.personality}
-<span class="section">【事业财运】</span>
+${r.personality}`;
+    if (r.locked) {
+      html += `<div class="vip-lock">
+        <h4>VIP专属内容</h4>
+        <p>事业财运、婚姻感情、健康注意、大运走势、完整称骨歌需开通VIP</p>
+        <button class="btn" onclick="showVipModal()">开通VIP查看完整报告</button>
+      </div>`;
+    } else {
+      html += `<span class="section">【事业财运】</span>
 ${r.career}
 <span class="section">【婚姻感情】</span>
 ${r.marriage}
@@ -399,6 +466,8 @@ ${r.dayun.map(d=>`${d[0]}：${d[1]}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━
 <span class="section">【称骨歌】</span>
 ${r.song}`;
+    }
+    el.innerHTML = html;
   } catch(e) { alert(e.message); }
 }
 
@@ -497,6 +566,9 @@ function renderJiazi() {
 
 // ===== 工具 =====
 function val(id) { return document.getElementById(id).value; }
+
+function showVipModal() { document.getElementById('vip-modal').style.display = 'flex'; }
+function hideVipModal() { document.getElementById('vip-modal').style.display = 'none'; }
 
 // 初始化
 initCompareRows();

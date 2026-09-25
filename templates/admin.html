@@ -25,9 +25,11 @@
   .badge-admin { background: #e94560; color: #fff; }
   .badge-active { background: #27ae60; color: #fff; }
   .badge-disabled { background: #95a5a6; color: #fff; }
+  .badge-vip { background: linear-gradient(135deg, #f1c40f, #e67e22); color: #fff; }
   .btn { padding: 5px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; }
   .btn-danger { background: #e74c3c; color: #fff; }
   .btn-warn { background: #f39c12; color: #fff; }
+  .btn-vip { background: linear-gradient(135deg, #f1c40f, #e67e22); color: #fff; }
   .btn:hover { opacity: 0.85; }
   .empty { text-align: center; color: #aaa; padding: 30px; }
   .daily-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 10px 0; }
@@ -57,7 +59,7 @@
   <div class="card">
     <h2>用户管理</h2>
     <table>
-      <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>计算次数</th><th>注册时间</th><th>操作</th></tr></thead>
+      <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>VIP</th><th>计算次数</th><th>注册时间</th><th>操作</th></tr></thead>
       <tbody id="user-list"></tbody>
     </table>
   </div>
@@ -104,24 +106,50 @@ async function loadUsers() {
   try {
     const users = await api('/api/admin/users');
     const tbody = document.getElementById('user-list');
-    if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无用户</td></tr>'; return; }
-    tbody.innerHTML = users.map(u => `
-      <tr>
+    if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无用户</td></tr>'; return; }
+    tbody.innerHTML = users.map(u => {
+      const vipBadge = u.is_vip
+        ? `<span class="badge badge-vip">VIP${u.vip_expire_at ? '至'+u.vip_expire_at : '(永久)'}</span>`
+        : '<span style="color:#999">未开通</span>';
+      const vipBtn = u.is_admin ? '-' : (u.is_vip
+        ? `<button class="btn btn-danger" onclick="removeVip(${u.id})">取消VIP</button>`
+        : `<button class="btn btn-vip" onclick="grantVip(${u.id})">开通VIP</button>`);
+      const toggleBtn = u.is_admin ? '-' : `<button class="btn ${u.is_active ? 'btn-warn' : 'btn-danger'}" onclick="toggleUser(${u.id})">${u.is_active ? '禁用' : '启用'}</button>`;
+      return `<tr>
         <td>${u.id}</td>
         <td><b>${u.username}</b></td>
         <td>${u.is_admin ? '<span class="badge badge-admin">管理员</span>' : '普通用户'}</td>
         <td>${u.is_active ? '<span class="badge badge-active">正常</span>' : '<span class="badge badge-disabled">已禁用</span>'}</td>
+        <td>${vipBadge}</td>
         <td>${u.calc_count}</td>
         <td>${u.created_at}</td>
-        <td>${u.is_admin ? '-' : `<button class="btn ${u.is_active ? 'btn-warn' : 'btn-danger'}" onclick="toggleUser(${u.id})">${u.is_active ? '禁用' : '启用'}</button>`}</td>
-      </tr>
-    `).join('');
-  } catch(e) { document.getElementById('user-list').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>'; }
+        <td style="white-space:nowrap">${toggleBtn} ${vipBtn}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { document.getElementById('user-list').innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>'; }
 }
 
 async function toggleUser(uid) {
   if (!confirm('确定切换该用户状态？')) return;
   await fetch('/api/admin/users/' + uid + '/toggle', {method: 'POST'});
+  loadUsers();
+}
+
+async function grantVip(uid) {
+  const days = prompt('开通VIP天数（输入0为永久）：', '30');
+  if (days === null) return;
+  const d = parseInt(days);
+  if (isNaN(d) || d < 0) { alert('请输入有效数字'); return; }
+  await fetch('/api/admin/users/' + uid + '/vip', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({days: d})
+  });
+  loadUsers();
+}
+
+async function removeVip(uid) {
+  if (!confirm('确定取消该用户的VIP？')) return;
+  await fetch('/api/admin/users/' + uid + '/vip', {method: 'DELETE'});
   loadUsers();
 }
 

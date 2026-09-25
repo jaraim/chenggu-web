@@ -42,6 +42,8 @@ def init_db():
             password_hash TEXT NOT NULL,
             is_admin INTEGER DEFAULT 0,
             is_active INTEGER DEFAULT 1,
+            is_vip INTEGER DEFAULT 0,
+            vip_expire_at TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS history (
@@ -60,15 +62,13 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
     """)
-    # 兼容旧表：添加 is_admin / is_active 字段（如果不存在）
-    try:
-        db.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        db.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
-    except sqlite3.OperationalError:
-        pass
+    # 兼容旧表：添加字段（如果不存在）
+    for col, typ in [('is_admin', 'INTEGER DEFAULT 0'), ('is_active', 'INTEGER DEFAULT 1'),
+                     ('is_vip', 'INTEGER DEFAULT 0'), ('vip_expire_at', 'TEXT')]:
+        try:
+            db.execute(f"ALTER TABLE users ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
     db.commit()
     db.close()
 
@@ -88,12 +88,29 @@ def login_required(f):
     return decorated
 
 
+def is_vip(user):
+    """检查用户是否为有效VIP（未过期）。"""
+    if not user:
+        return False
+    if user.get('is_admin'):
+        return True  # 管理员默认享有VIP权限
+    if not user.get('is_vip'):
+        return False
+    expire = user.get('vip_expire_at')
+    if not expire:
+        return True  # 永久VIP
+    return expire > datetime.datetime.now().strftime('%Y-%m-%d')
+
+
 def current_user():
     if 'user_id' in session:
         db = get_db()
-        row = db.execute('SELECT id, username, is_admin, is_active FROM users WHERE id=?', (session['user_id'],)).fetchone()
+        row = db.execute('SELECT id, username, is_admin, is_active, is_vip, vip_expire_at FROM users WHERE id=?', (session['user_id'],)).fetchone()
         if row and row['is_active']:
-            return {'id': row['id'], 'username': row['username'], 'is_admin': bool(row['is_admin'])}
+            user = {'id': row['id'], 'username': row['username'], 'is_admin': bool(row['is_admin']),
+                    'is_vip': bool(row['is_vip']), 'vip_expire_at': row['vip_expire_at']}
+            user['vip_valid'] = is_vip(user)
+            return user
     return None
 
 
@@ -116,7 +133,9 @@ def index():
     user = current_user()
     if not user:
         return render_template('login.html')
-    return render_template('index.html', username=user['username'], is_admin=user.get('is_admin', False))
+    return render_template('index.html', username=user['username'],
+                           is_admin=user.get('is_admin', False),
+                           is_vip=user.get('vip_valid', False))
 
 
 @app.route('/admin')
@@ -162,7 +181,10 @@ def login():
         return jsonify({'error': '账号已被禁用，请联系管理员'}), 403
     session['user_id'] = row['id']
     session['username'] = row['username']
-    return jsonify({'ok': True, 'username': row['username'], 'is_admin': bool(row['is_admin'])})
+    user = {'id': row['id'], 'username': row['username'], 'is_admin': bool(row['is_admin']),
+            'is_vip': bool(row['is_vip']), 'vip_expire_at': row['vip_expire_at']}
+    return jsonify({'ok': True, 'username': row['username'], 'is_admin': bool(row['is_admin']),
+                    'is_vip': is_vip(user)})
 
 
 @app.route('/api/logout', methods=['POST'])
@@ -343,6 +365,18 @@ def marriage():
         return jsonify({'error': f'合婚分析出错：{e}'}), 500
     result['name1'] = name1
     result['name2'] = name2
+    user = current_user()
+    result['is_vip'] = is_vip(user)
+    # 非VIP只返回评分和等级，详细分析锁定
+    if not is_vip(user):
+        result['locked'] = True
+        result['shengxiao'] = result['shengxiao'][:20] + '…（开通VIP查看完整分析）'
+        result['wuxing'] = '开通VIP查看五行互补分析'
+        result['rizhu'] = '开通VIP查看日柱关系分析'
+        result['guzhong'] = '开通VIP查看骨重匹配分析'
+        result['advice'] = '开通VIP查看综合建议'
+    else:
+        result['locked'] = False
     return jsonify(result)
 
 
@@ -364,6 +398,18 @@ def deep():
         return jsonify({'error': f'生成报告出错：{e}'}), 500
     report['standard_text'] = core.weight_text(report['standard_total'])
     report['palace_text'] = core.palace_text(report['palace_total'])
+    user = current_user()
+    report['is_vip'] = is_vip(user)
+    # 非VIP只返回性格和五行部分，其余锁定
+    if not is_vip(user):
+        report['locked'] = True
+        report['career'] = '开通VIP查看事业财运分析'
+        report['marriage'] = '开通VIP查看婚姻感情分析'
+        report['health'] = '开通VIP查看健康注意事项'
+        report['dayun'] = [('开通VIP', '查看大运走势')]
+        report['song'] = report['song'][:40] + '…（开通VIP查看完整称骨歌）'
+    else:
+        report['locked'] = False
     return jsonify(report)
 
 
@@ -437,6 +483,36 @@ def admin_history():
 def admin_delete_history(hid):
     db = get_db()
     db.execute('DELETE FROM history WHERE id=?', (hid,))
+    db.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/admin/users/<int:uid>/vip', methods=['POST'])
+@admin_required
+def admin_set_vip(uid):
+    data = request.get_json() or {}
+    days = int(data.get('days', 30))  # 默认开通30天，传0为永久
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+    if days == 0:
+        # 永久VIP
+        db.execute('UPDATE users SET is_vip=1, vip_expire_at=NULL WHERE id=?', (uid,))
+        expire_text = '永久'
+    else:
+        expire = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+        db.execute('UPDATE users SET is_vip=1, vip_expire_at=? WHERE id=?', (expire, uid))
+        expire_text = expire
+    db.commit()
+    return jsonify({'ok': True, 'vip_expire_at': expire_text})
+
+
+@app.route('/api/admin/users/<int:uid>/vip', methods=['DELETE'])
+@admin_required
+def admin_remove_vip(uid):
+    db = get_db()
+    db.execute('UPDATE users SET is_vip=0, vip_expire_at=NULL WHERE id=?', (uid,))
     db.commit()
     return jsonify({'ok': True})
 
