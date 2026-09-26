@@ -1298,29 +1298,50 @@ SHICHEN = [
 ]
 
 
-def shichen_jixiong(day_zhi):
+def shichen_jixiong(day_zhi, day_gan=None):
     """
-    按日支推算十二时辰吉凶（黄道黑道时辰）。
-    口诀：子午日起申时青龙、卯酉日起寅时、寅申日起子时、巳亥日起午时。
+    按日支推算十二时辰吉凶（黄道黑道 + 建除时辰 + 旬空，三档）。
+    黄道黑道完整口诀（六组）：
+        子午日起申、丑未日起戌、寅申日起子、卯酉日起寅、辰戌日起辰、巳亥日起午
     黄道六神为吉（青龙/明堂/金匮/天德/玉堂/司命），黑道六神为凶。
-    神索引 = (时辰索引 + k) % 12，k 使青龙落在口诀指定的时辰。
+    建除时辰：以日支时辰为「建」顺行十二神（开/成/定/除吉，破/危/闭凶，其余中）。
+    旬空：日柱所空地支的时辰无气，强制为「中」。
+    综合：黄道+1/黑道-1，建除吉+1/凶-1/平0；总分>0吉、<0凶、=0中。
     """
-    if day_zhi in ('子', '午'):
-        k = 4   # 申时(8)起青龙 → 8+k≡0
-    elif day_zhi in ('卯', '酉'):
-        k = 10  # 寅时(2)起青龙 → 2+k≡0
-    elif day_zhi in ('寅', '申'):
-        k = 0   # 子时(0)起青龙 → 0+k≡0
-    else:       # 巳、亥
-        k = 6   # 午时(6)起青龙 → 6+k≡0
+    # 黄道黑道起青龙时辰（六组完整）
+    qilong_shichen = {'子': '申', '午': '申', '丑': '戌', '未': '戌',
+                      '寅': '子', '申': '子', '卯': '寅', '酉': '寅',
+                      '辰': '辰', '戌': '辰', '巳': '午', '亥': '午'}
+    sc_index = {sc: i for i, (sc, _) in enumerate(SHICHEN)}
+    qilong_idx = sc_index[qilong_shichen[day_zhi]]
+    k = (0 - qilong_idx) % 12
+
+    # 建除时辰：日支时辰为建，顺行
+    jianchu_ji = {'开', '成', '定', '除'}
+    jianchu_xiong = {'破', '危', '闭'}
+    day_zhi_idx = sc_index[day_zhi]
+
+    # 旬空（需日干；无则跳过）
+    kong_zhi = None
+    if day_gan and day_gan in TIANGAN and day_zhi in DIZHI:
+        gan_idx = TIANGAN.index(day_gan)
+        zhi_idx = DIZHI.index(day_zhi)
+        kong_zhi = {(zhi_idx - gan_idx - 1) % 12, (zhi_idx - gan_idx - 2) % 12}
 
     result = []
     for i, (sc, time) in enumerate(SHICHEN):
         shen = HUANGDAO[(i + k) % 12]
+        hd_score = 1 if shen in HUANGDAO_JI else -1
+        jc = JIANCHU[(i - day_zhi_idx) % 12]
+        jc_score = 1 if jc in jianchu_ji else (-1 if jc in jianchu_xiong else 0)
+        total = hd_score + jc_score
+        ji = '吉' if total > 0 else ('凶' if total < 0 else '中')
+        # 旬空修正
+        if kong_zhi and i in kong_zhi:
+            ji = '中'
         result.append({
-            'shichen': sc, 'time': time, 'shen': shen,
-            'ji': '吉' if shen in HUANGDAO_JI else '凶',
-            'huangdao': shen in HUANGDAO_JI,
+            'shichen': sc, 'time': time, 'shen': shen, 'jianchu': jc,
+            'ji': ji, 'huangdao': shen in HUANGDAO_JI, 'score': total,
         })
     return result
 
@@ -1900,7 +1921,7 @@ def lucky_numbers(year, month, day):
         'year_wuxing': year_wuxing,
         'day_chonghe': shengxiao_chonghe(day_zhi),      # 当日生肖冲合
         'year_chonghe': shengxiao_chonghe(year_zhi),    # 当年生肖冲合
-        'shichen': shichen_jixiong(day_zhi),            # 当日十二时辰吉凶
+        'shichen': shichen_jixiong(day_zhi, day_gan),   # 当日十二时辰吉凶
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,

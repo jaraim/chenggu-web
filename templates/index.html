@@ -1140,21 +1140,21 @@ ${rankHtml}
   <div>【当年 ${r.year_shengxiao}】六合：<b style="color:#27ae60">${r.year_chonghe.liuhe ? r.year_chonghe.liuhe.shengxiao + '（' + r.year_chonghe.liuhe.zhi + '）' : '无'}</b>　三合：<b style="color:#27ae60">${r.year_chonghe.sanhe.map(x=>x.shengxiao + '（' + x.zhi + '）').join('、') || '无'}${r.year_chonghe.sanhe_ju ? '·' + r.year_chonghe.sanhe_ju : ''}</b>　相冲：<b style="color:#e74c3c">${r.year_chonghe.chong ? r.year_chonghe.chong.shengxiao + '（' + r.year_chonghe.chong.zhi + '）' : '无'}</b></div>
   <div style="font-size:12px;color:#999;margin-top:4px">六合生肖互相吸引、易得助力；三合生肖同心合力、合作融洽；相冲生肖易有摩擦、宜避冲突。</div>
 </div>
-<span class="section">时辰吉凶（黄道黑道）</span>
+<span class="section">时辰吉凶（黄道黑道·三档）</span>
 <div style="background:#faf6ee;border-radius:8px;padding:12px;margin:8px 0">
   <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between">
     ${r.shichen.map(h => {
-      const bg = h.ji === '吉' ? '#e8f0e8' : '#fbeae8';
-      const fg = h.ji === '吉' ? '#2e8b57' : '#c0392b';
+      const bg = h.ji === '吉' ? '#e8f0e8' : (h.ji === '凶' ? '#fbeae8' : '#f5f0e6');
+      const fg = h.ji === '吉' ? '#2e8b57' : (h.ji === '凶' ? '#c0392b' : '#a08c5a');
       return `<div style="flex:1;min-width:56px;text-align:center;background:${bg};border-radius:6px;padding:6px 2px;margin:2px">
       <div style="font-weight:bold;color:#5a3d2b;font-size:14px">${h.shichen}</div>
       <div style="font-size:12px;color:${fg};font-weight:bold">${h.ji}</div>
-      <div style="font-size:10px;color:#999">${h.shen}</div>
+      <div style="font-size:10px;color:#999">${h.shen} ${h.jianchu}</div>
       <div style="font-size:9px;color:#bbb">${h.time}</div>
     </div>`;
     }).join('')}
   </div>
-  <div style="font-size:12px;color:#999;margin-top:6px">黄道六神（青龙/明堂/金匮/天德/玉堂/司命）为吉，黑道六神为凶。宜在吉时办事，忌时宜静不宜动。</div>
+  <div style="font-size:12px;color:#999;margin-top:6px">黄道黑道十二神 + 建除时辰 + 旬空综合定吉凶（吉/中/凶三档）。宜在吉时办事，忌时宜静不宜动。</div>
 </div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
