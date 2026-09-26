@@ -1289,6 +1289,41 @@ JIANCHU = ['建', '除', '满', '平', '定', '执', '破', '危', '成', '收',
 HUANGDAO = ['青龙', '明堂', '天刑', '朱雀', '金匮', '天德', '白虎', '玉堂', '天牢', '玄武', '司命', '勾陈']
 HUANGDAO_JI = {'青龙', '明堂', '金匮', '天德', '玉堂', '司命'}  # 黄道吉日
 
+# 十二时辰（对应现代时间）
+SHICHEN = [
+    ('子', '23:00-01:00'), ('丑', '01:00-03:00'), ('寅', '03:00-05:00'),
+    ('卯', '05:00-07:00'), ('辰', '07:00-09:00'), ('巳', '09:00-11:00'),
+    ('午', '11:00-13:00'), ('未', '13:00-15:00'), ('申', '15:00-17:00'),
+    ('酉', '17:00-19:00'), ('戌', '19:00-21:00'), ('亥', '21:00-23:00'),
+]
+
+
+def shichen_jixiong(day_zhi):
+    """
+    按日支推算十二时辰吉凶（黄道黑道时辰）。
+    口诀：子午日起申时青龙、卯酉日起寅时、寅申日起子时、巳亥日起午时。
+    黄道六神为吉（青龙/明堂/金匮/天德/玉堂/司命），黑道六神为凶。
+    神索引 = (时辰索引 + k) % 12，k 使青龙落在口诀指定的时辰。
+    """
+    if day_zhi in ('子', '午'):
+        k = 4   # 申时(8)起青龙 → 8+k≡0
+    elif day_zhi in ('卯', '酉'):
+        k = 10  # 寅时(2)起青龙 → 2+k≡0
+    elif day_zhi in ('寅', '申'):
+        k = 0   # 子时(0)起青龙 → 0+k≡0
+    else:       # 巳、亥
+        k = 6   # 午时(6)起青龙 → 6+k≡0
+
+    result = []
+    for i, (sc, time) in enumerate(SHICHEN):
+        shen = HUANGDAO[(i + k) % 12]
+        result.append({
+            'shichen': sc, 'time': time, 'shen': shen,
+            'ji': '吉' if shen in HUANGDAO_JI else '凶',
+            'huangdao': shen in HUANGDAO_JI,
+        })
+    return result
+
 # 宜忌（简化版，基于建除十二神）
 JIANCHU_YIJI = {
     '建': {'yi': ['出行', '上任', '临政', '亲民'], 'ji': ['动土', '开仓', '嫁娶']},
@@ -1865,6 +1900,7 @@ def lucky_numbers(year, month, day):
         'year_wuxing': year_wuxing,
         'day_chonghe': shengxiao_chonghe(day_zhi),      # 当日生肖冲合
         'year_chonghe': shengxiao_chonghe(year_zhi),    # 当年生肖冲合
+        'shichen': shichen_jixiong(day_zhi),            # 当日十二时辰吉凶
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,
