@@ -1904,14 +1904,9 @@ NUMBER_LUCK = {
 
 
 def get_month_wang(month):
-    """公历月份对应的当令主旺五行（冬水、春木、夏火、秋金）。"""
-    if month in (12, 1, 2):
-        return '水'
-    if month in (3, 4, 5):
-        return '木'
-    if month in (6, 7, 8):
-        return '火'
-    return '金'  # 9,10,11
+    """农历月份（正月寅…十二月丑）对应月支的当令主旺五行。"""
+    MONTH_ZHI = ['寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥', '子', '丑']
+    return DIZHI_WUXING[MONTH_ZHI[(month - 1) % 12]]
 
 
 def strongest_wuxing(year, month, day, shichen=None):
@@ -1925,13 +1920,14 @@ def strongest_wuxing(year, month, day, shichen=None):
     gz = get_day_ganzhi(year, month, day)
     day_gan, day_zhi = gz[0], gz[1]
 
-    # 月令主旺
-    wang = get_month_wang(month)
+    # 农历与月令主旺：正月寅木…十二月丑土（月支五行定旺）
+    lunar = ZhDate.from_datetime(datetime.datetime(year, month, day))
+    wang = get_month_wang(lunar.lunar_month)
     # 旺相休囚死
     xiang = WUXING_SHENG[wang]                                    # 相：旺所生
     xiu = [w for w in WUXING_ORDER if WUXING_SHENG[w] == wang][0]  # 休：生旺者
-    qiu = WUXING_KE[wang]                                         # 囚：克旺者
-    si = [w for w in WUXING_ORDER if WUXING_KE[w] == wang][0]     # 死：旺所克
+    qiu = [w for w in WUXING_ORDER if WUXING_KE[w] == wang][0]     # 囚：克旺者（如火克金而金旺，火为囚）
+    si = WUXING_KE[wang]                                           # 死：旺所克（如金克木，木为死）
 
     score = {w: 0 for w in WUXING_ORDER}
     score[wang] += 3     # 当令者旺
@@ -1943,7 +1939,6 @@ def strongest_wuxing(year, month, day, shichen=None):
     score[TIANGAN_WUXING[year_gz[0]]] += 1
     score[DIZHI_WUXING[year_gz[1]]] += 1
     # 月柱（农历）
-    lunar = ZhDate.from_datetime(datetime.datetime(year, month, day))
     month_gz = get_month_pillar(lunar.lunar_year, lunar.lunar_month)
     score[TIANGAN_WUXING[month_gz[0]]] += 1.5
     score[DIZHI_WUXING[month_gz[1]]] += 1
