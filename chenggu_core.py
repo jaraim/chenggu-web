@@ -1837,11 +1837,17 @@ def strongest_wuxing(year, month, day):
     }
 
 
-def lucky_numbers(year, month, day):
+# 五鼠遁：日干定子时天干（甲己起甲子、乙庚起丙子、丙辛起戊子、丁壬起庚子、戊癸起壬子）
+WUSHUDUN = {'甲': '甲', '己': '甲', '乙': '丙', '庚': '丙', '丙': '戊', '辛': '戊',
+            '丁': '庚', '壬': '庚', '戊': '壬', '癸': '壬'}
+
+
+def lucky_numbers(year, month, day, shichen=None):
     """
-    输入年月日，返回当日五行强弱及吉数（1-49）。
+    输入年月日（时辰可选），返回当日五行强弱及吉数（1-49）。
     原理：旺相休囚死定五行强弱 → 最强五行数字为主；
           日主+生肖比和生扶为吉数，克者为忌。
+    shichen: 可选十二时辰（子丑寅卯…），用于算时柱、时支冲合、时辰吉凶高亮。
     """
     import datetime
     try:
@@ -1860,6 +1866,23 @@ def lucky_numbers(year, month, day):
     year_zhi = year_gz[1]
     year_shengxiao = SHENGXIAO_NAME[year_zhi]
     year_wuxing = DIZHI_WUXING[year_zhi]
+
+    # 时辰信息（可选）：五鼠遁算时柱
+    shichen_info = None
+    shichen_ch = None
+    if shichen and shichen in DIZHI:
+        i = DIZHI.index(shichen)
+        zi_gan = WUSHUDUN[day_gan]
+        shi_gan = TIANGAN[(TIANGAN.index(zi_gan) + i) % 10]
+        shichen_info = {
+            'shichen': shichen,
+            'time': SHICHEN[i][1],
+            'ganzhi': shi_gan + shichen,
+            'gan_wuxing': TIANGAN_WUXING[shi_gan],
+            'zhi_wuxing': DIZHI_WUXING[shichen],
+            'shengxiao': SHENGXIAO_NAME[shichen],
+        }
+        shichen_ch = shengxiao_chonghe(shichen)
 
     # 生肖五行（地支五行）
     shengxiao_wuxing = DIZHI_WUXING[day_zhi]
@@ -1934,11 +1957,23 @@ def lucky_numbers(year, month, day):
         _add_sx(year_ch['liuhe']['zhi'], '当年六合', 2)
     for x in year_ch['sanhe']:
         _add_sx(x['zhi'], '当年三合', 1)
+    # 所选时辰的冲合（可选，权重在当年之后）
+    if shichen_ch:
+        if shichen_ch['liuhe']:
+            _add_sx(shichen_ch['liuhe']['zhi'], f'{shichen_info["shichen"]}时六合', 2)
+        for x in shichen_ch['sanhe']:
+            _add_sx(x['zhi'], f'{shichen_info["shichen"]}时三合', 1)
     best_sx.sort(key=lambda x: -x['weight'])
 
     # ===== 关联分析：最佳数字（标注五行/所属生肖/关联维度/是否命中最佳生肖） =====
     strongest_numbers = set(strength['strongest_numbers'])
     zhu_set, sx_set, year_set = set(zhu_ji), set(sx_ji), set(year_ji)
+    # 所选时辰五行数字（可选）也纳入吉数并集
+    shichen_wx_numbers = None
+    if shichen_info:
+        shichen_wx_numbers = set(number_groups()[shichen_info['zhi_wuxing']])
+        ji_numbers = sorted(set(ji_numbers) | shichen_wx_numbers)
+        best = sorted([n for n in ji_numbers if n < 40], key=lambda n: (-luck_rank(n), n))[:8]
     best_sx_zhi = {x['zhi'] for x in best_sx}
     best_detail = []
     for n in best:
@@ -1953,12 +1988,21 @@ def lucky_numbers(year, month, day):
             tags.append(f'当日{shengxiao}{shengxiao_wuxing}')
         if n in year_set:
             tags.append(f'当年{year_shengxiao}{year_wuxing}')
+        if shichen_wx_numbers and n in shichen_wx_numbers:
+            tags.append(f'时{shichen_info["shichen"]}时{shichen_info["zhi_wuxing"]}')
         best_detail.append({
             'n': n, 'zhi': zhi, 'shengxiao': sx,
             'wuxing': get_number_wuxing(n),
             'tags': tags, 'hit_best_sx': zhi in best_sx_zhi,
             'luck': NUMBER_LUCK.get(n, ''),
         })
+
+    # 时辰吉凶：所选时辰标记 selected
+    shichen_list = shichen_jixiong(day_zhi, day_gan)
+    if shichen_info:
+        for h in shichen_list:
+            if h['shichen'] == shichen_info['shichen']:
+                h['selected'] = True
 
     return {
         'date': f'{year}年{month}月{day}日',
@@ -1971,7 +2015,9 @@ def lucky_numbers(year, month, day):
         'year_chonghe': year_ch,            # 当年生肖冲合
         'best_sx': best_sx,                 # 最佳生肖（关联分析）
         'best_detail': best_detail,         # 最佳数字（带关联标注）
-        'shichen': shichen_jixiong(day_zhi, day_gan),   # 当日十二时辰吉凶
+        'shichen_info': shichen_info,       # 所选时辰信息（时柱干支/五行/生肖），未选为None
+        'shichen_ch': shichen_ch,           # 所选时辰的生肖冲合
+        'shichen_list': shichen_list,       # 当日十二时辰吉凶（所选时辰标selected）
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,

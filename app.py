@@ -677,14 +677,17 @@ def qi_gua():
 
 @app.route('/api/lucky-numbers', methods=['POST'])
 def lucky_numbers():
-    """输入年月日，返回当天最佳吉数（1-49五行）。"""
-    data = request.get_json()
+    """输入年月日（时辰可选），返回当日五行强弱及吉数（1-49）。"""
+    data = request.get_json() or {}
     try:
         y = int(data['year']); m = int(data['month']); d = int(data['day'])
     except (ValueError, KeyError):
         return jsonify({'error': '请填写有效的年月日'}), 400
+    sc = data.get('shichen') or None
+    if sc and sc not in ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']:
+        return jsonify({'error': '时辰无效，请选择子丑寅卯辰巳午未申酉戌亥之一'}), 400
     try:
-        result = core.lucky_numbers(y, m, d)
+        result = core.lucky_numbers(y, m, d, shichen=sc)
     except Exception as e:
         return jsonify({'error': f'计算出错：{e}'}), 500
     if 'error' in result:

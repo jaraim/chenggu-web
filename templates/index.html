@@ -427,11 +427,29 @@
 <div class="panel" id="panel-lucky">
   <div class="card">
     <h2>当日五行强弱与吉数</h2>
-    <p style="font-size:13px;color:#888;margin-bottom:10px">输入日期，按旺相休囚死规则推算当日五行强弱，得出最强五行及其1-49对应数字；并附日主+生肖吉数参考。</p>
+    <p style="font-size:13px;color:#888;margin-bottom:10px">输入日期（时辰可选），按旺相休囚死规则推算当日五行强弱，得出最强五行及其1-49对应数字；并附日主+生肖吉数参考。</p>
     <div class="form-row">
       <div class="form-group"><label>年份</label><input type="number" id="lk-year" placeholder="如2026"></div>
       <div class="form-group"><label>月份</label><input type="number" id="lk-month" placeholder="1-12"></div>
       <div class="form-group"><label>日期</label><input type="number" id="lk-day" placeholder="1-31"></div>
+      <div class="form-group">
+        <label>时辰（可选）</label>
+        <select id="lk-shichen">
+          <option value="">不指定</option>
+          <option value="子">子时 23-1</option>
+          <option value="丑">丑时 1-3</option>
+          <option value="寅">寅时 3-5</option>
+          <option value="卯">卯时 5-7</option>
+          <option value="辰">辰时 7-9</option>
+          <option value="巳">巳时 9-11</option>
+          <option value="午">午时 11-13</option>
+          <option value="未">未时 13-15</option>
+          <option value="申">申时 15-17</option>
+          <option value="酉">酉时 17-19</option>
+          <option value="戌">戌时 19-21</option>
+          <option value="亥">亥时 21-23</option>
+        </select>
+      </div>
       <div class="form-group"><label></label><button class="btn" onclick="useToday()">今天</button></div>
     </div>
     <button class="btn" onclick="doLucky()">查询当日五行</button>
@@ -1071,6 +1089,8 @@ function useToday() {
 
 async function doLucky() {
   const body = {year: +val('lk-year'), month: +val('lk-month'), day: +val('lk-day')};
+  const sc = document.getElementById('lk-shichen').value;
+  if (sc) body.shichen = sc;
   if (!body.year || !body.month || !body.day) { alert('请填写年月日'); return; }
   try {
     const r = await api('/api/lucky-numbers', 'POST', body);
@@ -1117,6 +1137,7 @@ async function doLucky() {
   <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）　当月令旺：<b style="color:#8a6d4b">${r.strength.wang}</b></div>
   <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　当日生肖：<b style="color:#8a6d4b">${r.shengxiao}（${r.shengxiao_wuxing}）</b></div>
   <div style="font-size:14px;color:#666;margin-top:4px">当年：<b>${r.year_ganzhi}年</b>（${r.year_shengxiao}年 · 五行属<b style="color:#8a6d4b">${r.year_wuxing}</b>）</div>
+  ${r.shichen_info ? `<div style="font-size:14px;color:#666;margin-top:4px">时柱：<b>${r.shichen_info.ganzhi}</b>（${r.shichen_info.shichen}时 ${r.shichen_info.time} · ${r.shichen_info.shengxiao}属<b style="color:#8a6d4b">${r.shichen_info.zhi_wuxing}</b>）</div>` : ''}
 </div>
 <span class="section">当日最强五行</span>
 <div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:12px;padding:18px;text-align:center;margin:8px 0">
@@ -1163,23 +1184,25 @@ ${rankHtml}
 <div style="background:#faf6ee;border-radius:8px;padding:12px;margin:8px 0;font-size:14px;line-height:2">
   <div>【当日 ${r.shengxiao}】六合：<b style="color:#27ae60">${r.day_chonghe.liuhe ? r.day_chonghe.liuhe.shengxiao + '（' + r.day_chonghe.liuhe.zhi + '）' : '无'}</b>　三合：<b style="color:#27ae60">${r.day_chonghe.sanhe.map(x=>x.shengxiao + '（' + x.zhi + '）').join('、') || '无'}${r.day_chonghe.sanhe_ju ? '·' + r.day_chonghe.sanhe_ju : ''}</b>　相冲：<b style="color:#e74c3c">${r.day_chonghe.chong ? r.day_chonghe.chong.shengxiao + '（' + r.day_chonghe.chong.zhi + '）' : '无'}</b></div>
   <div>【当年 ${r.year_shengxiao}】六合：<b style="color:#27ae60">${r.year_chonghe.liuhe ? r.year_chonghe.liuhe.shengxiao + '（' + r.year_chonghe.liuhe.zhi + '）' : '无'}</b>　三合：<b style="color:#27ae60">${r.year_chonghe.sanhe.map(x=>x.shengxiao + '（' + x.zhi + '）').join('、') || '无'}${r.year_chonghe.sanhe_ju ? '·' + r.year_chonghe.sanhe_ju : ''}</b>　相冲：<b style="color:#e74c3c">${r.year_chonghe.chong ? r.year_chonghe.chong.shengxiao + '（' + r.year_chonghe.chong.zhi + '）' : '无'}</b></div>
+  ${r.shichen_info ? `<div>【所择 ${r.shichen_info.shichen}时（${r.shichen_info.ganzhi}）】六合：<b style="color:#27ae60">${r.shichen_ch.liuhe ? r.shichen_ch.liuhe.shengxiao + '（' + r.shichen_ch.liuhe.zhi + '）' : '无'}</b>　三合：<b style="color:#27ae60">${r.shichen_ch.sanhe.map(x=>x.shengxiao + '（' + x.zhi + '）').join('、') || '无'}</b>　相冲：<b style="color:#e74c3c">${r.shichen_ch.chong ? r.shichen_ch.chong.shengxiao + '（' + r.shichen_ch.chong.zhi + '）' : '无'}</b></div>` : ''}
   <div style="font-size:12px;color:#999;margin-top:4px">六合生肖互相吸引、易得助力；三合生肖同心合力、合作融洽；相冲生肖易有摩擦、宜避冲突。</div>
 </div>
 <span class="section">时辰吉凶（黄道黑道·三档）</span>
 <div style="background:#faf6ee;border-radius:8px;padding:12px;margin:8px 0">
   <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between">
-    ${r.shichen.map(h => {
+    ${r.shichen_list.map(h => {
       const bg = h.ji === '吉' ? '#e8f0e8' : (h.ji === '凶' ? '#fbeae8' : '#f5f0e6');
       const fg = h.ji === '吉' ? '#2e8b57' : (h.ji === '凶' ? '#c0392b' : '#a08c5a');
-      return `<div style="flex:1;min-width:56px;text-align:center;background:${bg};border-radius:6px;padding:6px 2px;margin:2px">
-      <div style="font-weight:bold;color:#5a3d2b;font-size:14px">${h.shichen}</div>
+      const border = h.selected ? '3px solid #e67e22' : 'none';
+      return `<div style="flex:1;min-width:56px;text-align:center;background:${bg};border:${border};border-radius:6px;padding:6px 2px;margin:2px">
+      <div style="font-weight:bold;color:#5a3d2b;font-size:14px">${h.shichen}${h.selected ? ' ✓' : ''}</div>
       <div style="font-size:12px;color:${fg};font-weight:bold">${h.ji}</div>
       <div style="font-size:10px;color:#999">${h.shen} ${h.jianchu}</div>
       <div style="font-size:9px;color:#bbb">${h.time}</div>
     </div>`;
     }).join('')}
   </div>
-  <div style="font-size:12px;color:#999;margin-top:6px">黄道黑道十二神 + 建除时辰 + 旬空综合定吉凶（吉/中/凶三档）。宜在吉时办事，忌时宜静不宜动。</div>
+  <div style="font-size:12px;color:#999;margin-top:6px">黄道黑道十二神 + 建除时辰 + 旬空综合定吉凶（吉/中/凶三档）。宜在吉时办事，忌时宜静不宜动。${r.shichen_info ? `<b style="color:#e67e22"> 已选${r.shichen_info.shichen}时（${r.shichen_info.ganzhi}，${r.shichen_info.zhi_wuxing}）</b>` : ''}</div>
 </div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
