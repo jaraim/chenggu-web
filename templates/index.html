@@ -516,7 +516,9 @@ async function doCalc() {
 四柱合计：${r.palace.total_text}
 ━━━━━━━━━━━━━━━━━━━━
 <span class="section">【${r.gender}命称骨歌 · ${r.standard.total_text}】</span>
-${r.song}`;
+<div style="background:#faf6ee;border-radius:8px;padding:12px;line-height:1.9">${r.song}</div>
+${r.plain ? `<span class="section">白话解义</span>
+<div style="background:#eef5ee;border-radius:8px;padding:12px;font-size:14px;color:#2d5016;line-height:1.8">${r.plain}</div>` : ''}`;
   } catch(e) { alert(e.message); }
 }
 
@@ -666,7 +668,9 @@ ${r.health}
 ${r.dayun.map(d=>`${d[0]}：${d[1]}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━
 <span class="section">【称骨歌】</span>
-${r.song}
+<div style="background:#faf6ee;border-radius:8px;padding:12px;line-height:1.9">${r.song}</div>
+${r.plain ? `<span class="section">白话解义</span>
+<div style="background:#eef5ee;border-radius:8px;padding:12px;font-size:14px;color:#2d5016;line-height:1.8">${r.plain}</div>` : ''}
 <div style="margin-top:15px;text-align:center">
   <button class="btn" onclick="exportPDF('deep')" style="background:#8a6d4b">导出PDF报告</button>
 </div>`;
@@ -715,7 +719,7 @@ async function doCompare() {
     tableHtml += '</table>';
     let songsHtml = '<span class="section">各人称骨歌</span>\n';
     r.people.forEach(p => {
-      songsHtml += `【${p.name}】${p.standard_text}（${p.gender}命）\n${p.song.substring(0, 80)}…\n\n`;
+      songsHtml += `【${p.name}】${p.standard_text}（${p.gender}命）\n${p.song.substring(0, 80)}…\n${p.plain ? '解义：' + p.plain + '\n' : ''}\n`;
     });
     el.innerHTML = `<div class="title">多人生辰对比（按标准骨重排序）</div>${tableHtml}\n${songsHtml}`;
   } catch(e) {

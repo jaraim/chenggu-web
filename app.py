@@ -268,6 +268,7 @@ def calc():
         return jsonify({'error': f'计算出错：{e}'}), 500
 
     song = (core.MALE_SONGS if gender == '男' else core.FEMALE_SONGS).get(s['total'], '（暂无）')
+    plain = (core.CHENGGU_PLAIN_M if gender == '男' else core.CHENGGU_PLAIN_F).get(s['total'], '')
 
     # 保存历史（普通用户限20条，VIP无限）
     db = get_db()
@@ -302,6 +303,7 @@ def calc():
             'd_text': core.palace_text(p['d']), 't_text': core.palace_text(p['t']),
         },
         'song': song,
+        'plain': plain,
     })
 
 
@@ -357,6 +359,7 @@ def compare():
             s = core.standard_bone_weight(y, m, d, h)
             p = core.palace_bone_weight(y, m, d, h)
             song = (core.MALE_SONGS if gender == '男' else core.FEMALE_SONGS).get(s['total'], '（暂无）')
+            plain = (core.CHENGGU_PLAIN_M if gender == '男' else core.CHENGGU_PLAIN_F).get(s['total'], '')
             results.append({
                 'name': name, 'gender': gender,
                 'birth': f'{y}-{m:02d}-{d:02d} {h:02d}时',
@@ -364,7 +367,7 @@ def compare():
                 'standard_total': s['total'], 'standard_text': core.weight_text(s['total']),
                 'palace_total': p['total'], 'palace_text': core.palace_text(p['total']),
                 'pillars': [p['year_p'], p['month_p'], p['day_p'], p['hour_p']],
-                'song': song,
+                'song': song, 'plain': plain,
             })
         except Exception as e:
             return jsonify({'error': f'{name}计算出错：{e}'}), 400
