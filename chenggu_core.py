@@ -941,6 +941,34 @@ SHENGXIAO_HE = {'子':'丑','丑':'子','寅':'亥','卯':'戌','辰':'酉','巳
                  '午':'未','未':'午','申':'巳','酉':'辰','戌':'卯','亥':'寅'}
 SHENGXIAO_NAME = {'子':'鼠','丑':'牛','寅':'虎','卯':'兔','辰':'龙','巳':'蛇',
                   '午':'马','未':'羊','申':'猴','酉':'鸡','戌':'狗','亥':'猪'}
+# 生肖三合局
+SHENGXIAO_SANHE = [
+    {'zhi': ['申', '子', '辰'], 'ju': '水局'},
+    {'zhi': ['寅', '午', '戌'], 'ju': '火局'},
+    {'zhi': ['巳', '酉', '丑'], 'ju': '金局'},
+    {'zhi': ['亥', '卯', '未'], 'ju': '木局'},
+]
+
+
+def shengxiao_chonghe(zhi):
+    """返回某地支（生肖）的六合、三合、相冲生肖。"""
+    sx = SHENGXIAO_NAME[zhi]
+    he = SHENGXIAO_HE.get(zhi)          # 六合地支
+    chong = SHENGXIAO_CHONG.get(zhi)    # 相冲地支
+    sanhe = []
+    sanhe_ju = ''
+    for group in SHENGXIAO_SANHE:
+        if zhi in group['zhi']:
+            sanhe = [g for g in group['zhi'] if g != zhi]
+            sanhe_ju = group['ju']
+            break
+    return {
+        'zhi': zhi, 'shengxiao': sx,
+        'liuhe': {'zhi': he, 'shengxiao': SHENGXIAO_NAME[he]} if he else None,
+        'sanhe': [{'zhi': g, 'shengxiao': SHENGXIAO_NAME[g]} for g in sanhe],
+        'sanhe_ju': sanhe_ju,
+        'chong': {'zhi': chong, 'shengxiao': SHENGXIAO_NAME[chong]} if chong else None,
+    }
 
 
 def liunian_fortune(pillars, gender, birth_year, years=10):
@@ -1835,6 +1863,8 @@ def lucky_numbers(year, month, day):
         'year_ganzhi': year_gz,
         'year_shengxiao': year_shengxiao,
         'year_wuxing': year_wuxing,
+        'day_chonghe': shengxiao_chonghe(day_zhi),      # 当日生肖冲合
+        'year_chonghe': shengxiao_chonghe(year_zhi),    # 当年生肖冲合
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,
