@@ -2208,6 +2208,9 @@ def lucky_numbers(year, month, day, shichen=None):
             if h['shichen'] == shichen_info['shichen']:
                 h['selected'] = True
 
+    # 五行计分排行文字（兼容 Python 3.10：避免 f-string 嵌套同引号）
+    _rank_score = '、'.join('{}{}分'.format(x['w'], x['score']) for x in strength['ranking'])
+
     return {
         'date': f'{year}年{month}月{day}日',
         'ganzhi': gz, 'shengxiao': shengxiao,
@@ -2239,7 +2242,7 @@ def lucky_numbers(year, month, day, shichen=None):
         'number_luck': NUMBER_LUCK,
         'tips': [
             f'八字四柱：{strength["pillars"][0]}年（{year_shengxiao}年）·{strength["pillars"][1]}月·{strength["pillars"][2]}日（{shengxiao}日）·{strength["pillars"][3] if strength["pillars"][3] else "未选时辰"}',
-            f'四柱五行最强为{strength["strongest"]}（计分排行：{"、".join(f"{x["w"]}{x["score"]}分" for x in strength["ranking"])}），最强五行对应数字为最旺之数',
+            f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），最强五行对应数字为最旺之数',
             f'最佳生肖：八字最强{strength["strongest"]}五行生肖 + {shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])} + 当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
             f'数字中命中最佳生肖者为双吉，优先选用',
             '以上仅供参考娱乐，不构成任何投注建议',
