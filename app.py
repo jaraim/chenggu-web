@@ -724,7 +724,7 @@ def admin_stats():
 @admin_required
 def admin_users():
     db = get_db()
-    rows = db.execute("""SELECT u.id, u.username, u.is_admin, u.is_active, u.created_at,
+    rows = db.execute("""SELECT u.id, u.username, u.is_admin, u.is_active, u.is_vip, u.vip_expire_at, u.created_at,
                          (SELECT COUNT(*) FROM history h WHERE h.user_id=u.id) as calc_count
                          FROM users u ORDER BY u.id DESC""").fetchall()
     return jsonify([dict(r) for r in rows])

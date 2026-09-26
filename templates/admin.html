@@ -155,17 +155,26 @@ async function grantVip(uid) {
   if (days === null) return;
   const d = parseInt(days);
   if (isNaN(d) || d < 0) { alert('请输入有效数字'); return; }
-  await fetch('/api/admin/users/' + uid + '/vip', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({days: d})
-  });
-  loadUsers();
+  try {
+    const res = await fetch('/api/admin/users/' + uid + '/vip', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({days: d})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) { alert('开通失败：' + (data.error || ('HTTP ' + res.status))); return; }
+    alert('已开通VIP' + (data.vip_expire_at ? '至' + data.vip_expire_at : '（永久）'));
+    loadUsers();
+  } catch(e) { alert('开通失败：' + e.message); }
 }
 
 async function removeVip(uid) {
   if (!confirm('确定取消该用户的VIP？')) return;
-  await fetch('/api/admin/users/' + uid + '/vip', {method: 'DELETE'});
-  loadUsers();
+  try {
+    const res = await fetch('/api/admin/users/' + uid + '/vip', {method: 'DELETE'});
+    if (!res.ok) { alert('取消失败：HTTP ' + res.status); return; }
+    alert('已取消VIP');
+    loadUsers();
+  } catch(e) { alert('取消失败：' + e.message); }
 }
 
 async function loadHistory() {
