@@ -1136,6 +1136,20 @@ ${rankHtml}
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.sx_ji.map(n=>`<span style="display:inline-block;background:#e8f0e8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#2e8b57">${n}</span>`).join('')}</div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
+<span class="section">十二生肖数字五行对照</span>
+<div style="margin:8px 0">
+${Object.keys(r.sx_number_map).map(zhi => {
+  const item = r.sx_number_map[zhi];
+  const isDay = (zhi === r.ganzhi[1]);
+  const isYear = (zhi === r.year_ganzhi[1]);
+  return `<div style="display:flex;align-items:center;margin:4px 0;font-size:13px;padding:3px 6px;border-radius:5px;${(isDay||isYear)?'background:#f5efe0':''}">
+  <span style="width:88px;font-weight:bold;color:#5a3d2b">${zhi}（${item.shengxiao}-${item.wuxing}）</span>
+  <span style="flex:1;color:#666">${item.numbers.join(' ')}</span>
+  ${isDay ? '<span style="color:#e67e22;font-size:11px;font-weight:bold">当日</span>' : ''}
+  ${isYear ? '<span style="color:#2471a3;font-size:11px;font-weight:bold">当年</span>' : ''}
+</div>`;
+}).join('')}
+</div>
 <span class="section">当日提示</span>
 ${r.tips.map((t,i)=>`${i+1}. ${t}`).join('\n')}
 <p style="font-size:11px;color:#aaa;margin-top:10px">内容基于传统数理文化，仅供娱乐参考，不构成任何投注建议。</p>`;

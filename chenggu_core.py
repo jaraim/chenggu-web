@@ -1665,6 +1665,23 @@ def number_groups():
     return groups
 
 
+def shengxiao_number_map():
+    """十二生肖（地支）对应的1-49数字及五行。
+    规律：数字 n 归属地支 index=(n+5)%12（子丑寅卯辰巳午未申酉戌亥）。"""
+    m = {}
+    for n in range(1, 50):
+        zhi = DIZHI[(n + 5) % 12]
+        m.setdefault(zhi, []).append(n)
+    return {
+        zhi: {
+            'numbers': m[zhi],
+            'wuxing': DIZHI_WUXING[zhi],
+            'shengxiao': SHENGXIAO_NAME[zhi],
+        }
+        for zhi in DIZHI
+    }
+
+
 # 数字吉凶寓意（民俗参考）
 NUMBER_LUCK = {
     1: '一生一世，万物之始', 2: '成双成对，好事成双', 3: '三阳开泰，生生不息',
@@ -1830,6 +1847,7 @@ def lucky_numbers(year, month, day):
         'ji_wuxing': ji_wuxing,     # 忌数（克日主+克生肖）
         'best': best,               # 最佳吉数TOP8
         'groups': groups,           # 1-49五行分组
+        'sx_number_map': shengxiao_number_map(),  # 十二生肖数字五行对照
         'number_luck': NUMBER_LUCK,
         'tips': [
             f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}；当年为{year_gz}年（{year_shengxiao}年），五行属{year_wuxing}',
