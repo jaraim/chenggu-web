@@ -1754,10 +1754,10 @@ def number_groups():
 
 def shengxiao_number_map():
     """十二生肖（地支）对应的1-49数字及五行。
-    规律：数字 n 归属地支 index=(n+5)%12（子丑寅卯辰巳午未申酉戌亥）。"""
+    规律：数字 n 归属地支 index=(7-n)%12（子丑寅卯辰巳午未申酉戌亥）。"""
     m = {}
     for n in range(1, 50):
-        zhi = DIZHI[(n + 5) % 12]
+        zhi = DIZHI[(7 - n) % 12]
         m.setdefault(zhi, []).append(n)
     return {
         zhi: {
@@ -2026,7 +2026,7 @@ def lucky_numbers(year, month, day, shichen=None):
     best_sx_zhi = {x['zhi'] for x in best_sx}
     best_detail = []
     for n in best:
-        zhi = DIZHI[(n + 5) % 12]          # 数字归属生肖（对照表规则）
+        zhi = DIZHI[(7 - n) % 12]          # 数字归属生肖（对照表规则）
         sx = SHENGXIAO_NAME[zhi]
         tags = []
         if n in strongest_numbers:
