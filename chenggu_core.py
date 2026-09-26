@@ -1961,6 +1961,7 @@ def strongest_wuxing(year, month, day, shichen=None):
         'ranking': [{'w': w, 'score': round(s, 1), 'numbers': groups[w]} for w, s in ranking],
         'strongest': strongest,
         'strongest_numbers': groups[strongest],
+        'scores': {w: round(s, 1) for w, s in score.items()},   # 四柱五行原始得分
         'wang': wang,
         'xiang': xiang, 'xiu': xiu, 'qiu': qiu, 'si': si,
         'day_gan_wuxing': TIANGAN_WUXING[day_gan],
@@ -2041,8 +2042,7 @@ def lucky_numbers(year, month, day, shichen=None):
     ke_sx = ke_sx[0] if ke_sx else shengxiao_wuxing
     ji_wuxing = list(set(groups[ke_wo] + groups[ke_sx]))
 
-    # ===== 最佳吉数TOP：以当日五行强弱为核心，口彩仅作微调 =====
-    # 前置集合（供排序与详情标注共用）
+    # ===== 最佳吉数TOP：前置集合（供排序与详情标注共用） =====
     strongest_numbers = set(strength['strongest_numbers'])
     zhu_set, sx_set, year_set = set(zhu_ji), set(sx_ji), set(year_ji)
     shichen_wx_numbers = None
@@ -2050,43 +2050,6 @@ def lucky_numbers(year, month, day, shichen=None):
         shichen_wx_numbers = set(number_groups()[shichen_info['zhi_wuxing']])
         ji_numbers = sorted(set(ji_numbers) | shichen_wx_numbers)
     sx_map_now = shengxiao_number_map()
-
-    def luck_rank(n):
-        base = 0
-        if n in strongest_numbers:
-            base += 60      # 当日最强五行（第一优先）
-        if n in zhu_set:
-            base += 40      # 日主比和
-        if n in ci_ji:
-            base += 30      # 日主生扶（印）
-        if n in sx_set:
-            base += 25      # 当日生肖五行
-        if n in year_set:
-            base += 20      # 当年生肖五行
-        if shichen_wx_numbers and n in shichen_wx_numbers:
-            base += 20      # 所选时辰五行
-        if n in best_sx_numbers:
-            base += 10      # 命中最佳生肖（双吉）
-        # 口彩微调（不再主导排序）
-        if n % 10 == 8:
-            base += 12
-        elif n % 10 == 6:
-            base += 10
-        elif n % 10 == 9:
-            base += 8
-        elif n % 10 == 5:
-            base += 6
-        elif n % 10 == 0:
-            base += 4
-        if n % 10 == 4:
-            base -= 25      # 4谐音忌讳
-        if n >= 40:
-            base -= 45      # 40+谐音忌讳（重扣但保留入选机会）
-        if n % 7 == 0:
-            base += 8
-        if n % 8 == 0:
-            base += 10
-        return base
 
     # ===== 关联分析：最佳生肖（当日+当年六合/三合并集，六合优先） =====
     day_ch = shengxiao_chonghe(day_zhi)
@@ -2123,13 +2086,50 @@ def lucky_numbers(year, month, day, shichen=None):
             _add_sx(x['zhi'], f'{shichen_info["shichen"]}时三合', 1)
     best_sx.sort(key=lambda x: -x['weight'])
 
-    # 命中最佳生肖的数字（双吉集合，供吉数排序加分）
-    best_sx_zhi_set = {x['zhi'] for x in best_sx}
-    best_sx_numbers = set()
-    for _z in best_sx_zhi_set:
-        best_sx_numbers |= set(sx_map_now[_z]['numbers'])
-    # 最佳吉数TOP：以八字五行强弱为核心，口彩仅微调
-    best = sorted(ji_numbers, key=lambda n: (-luck_rank(n), n))[:8]
+    # ===== 数字综合得分：由四柱五行 + 生肖地支关系真正算出 =====
+    # 五行分：该数字五行的四柱得分（最强=60分，按名次依次×1.0/0.92/0.84/0.76/0.68，避免并列反超）
+    # 生肖关系分：数字生肖 与 年支/日支/时支 的关系（六合+12/三合+10/比和+8/普通+2/相冲-10/六害-8）
+    scores = strength['scores']
+    max_score = max(scores.values()) or 1
+    _rank_discount = {x['w']: 1 - 0.08 * i for i, x in enumerate(strength['ranking'])}
+    pillar_zhi = [year_zhi, day_zhi] + ([shichen] if shichen_info else [])
+    _rel_cache = {}
+    def _zhi_rel(a, b):
+        key = (a, b)
+        if key in _rel_cache:
+            return _rel_cache[key]
+        if a == b:
+            r = ('比和', 8)
+        else:
+            ch = shengxiao_chonghe(a)
+            if ch['liuhe'] and ch['liuhe']['zhi'] == b:
+                r = ('六合', 12)
+            elif any(x['zhi'] == b for x in ch['sanhe']):
+                r = ('三合', 10)
+            elif ch['chong'] and ch['chong']['zhi'] == b:
+                r = ('相冲', -10)
+            elif SHENGXIAO_LIUHAI.get(a) == b:
+                r = ('六害', -8)
+            else:
+                r = ('普通', 2)
+        _rel_cache[key] = r
+        return r
+
+    number_rels = {}
+    def number_score(n):
+        w = get_number_wuxing(n)
+        zhi = DIZHI[(7 - n) % 12]
+        s = scores[w] / max_score * 60 * _rank_discount[w]
+        rels = []
+        for pz in pillar_zhi:
+            name, pt = _zhi_rel(pz, zhi)
+            rels.append(name)
+            s += pt
+        number_rels[n] = rels
+        return round(s, 1)
+
+    # 最佳吉数TOP：候选 = 吉数并集 ∪ 四柱最强五行数字，按四柱综合得分排序（非口彩吉数）
+    best = sorted(set(ji_numbers) | set(strongest_numbers), key=lambda n: (-number_score(n), n))[:8]
 
     # ===== 生肖三等分级：最佳（六合/三合）/ 中（无冲无合）/ 差（相冲+六害） =====
     best_zhi = {x['zhi'] for x in best_sx}
@@ -2188,15 +2188,20 @@ def lucky_numbers(year, month, day, shichen=None):
             tags.append(f'最强{strength["strongest"]}')
         if n in zhu_set:
             tags.append(f'日主{day_wuxing}')
+        if n in ci_ji:
+            tags.append(f'生扶{sheng_wo}')
         if n in sx_set:
             tags.append(f'当日{shengxiao}{shengxiao_wuxing}')
         if n in year_set:
             tags.append(f'当年{year_shengxiao}{year_wuxing}')
         if shichen_wx_numbers and n in shichen_wx_numbers:
             tags.append(f'时{shichen_info["shichen"]}时{shichen_info["zhi_wuxing"]}')
+        # 地支关系标注：数字生肖 vs 年支/日支/时支
         best_detail.append({
             'n': n, 'zhi': zhi, 'shengxiao': sx,
             'wuxing': get_number_wuxing(n),
+            'score': number_score(n),
+            'rels': number_rels.get(n, []),
             'tags': tags, 'hit_best_sx': zhi in best_sx_zhi,
             'luck': NUMBER_LUCK.get(n, ''),
         })
@@ -2244,7 +2249,7 @@ def lucky_numbers(year, month, day, shichen=None):
             f'八字四柱：{strength["pillars"][0]}年（{year_shengxiao}年）·{strength["pillars"][1]}月·{strength["pillars"][2]}日（{shengxiao}日）·{strength["pillars"][3] if strength["pillars"][3] else "未选时辰"}',
             f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），最强五行对应数字为最旺之数',
             f'最佳生肖：八字最强{strength["strongest"]}五行生肖 + {shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])} + 当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
-            f'数字中命中最佳生肖者为双吉，优先选用',
+            f'最佳数字得分 = 四柱五行分（最强60分按比例）+ 数字生肖与年/日/时支关系分（六合12/三合10/比和8/相冲-10/六害-8），非口彩吉数',
             '以上仅供参考娱乐，不构成任何投注建议',
         ],
     }

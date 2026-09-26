@@ -1111,14 +1111,14 @@ async function doLucky() {
   <span style="color:${isJi ? '#27ae60' : '#999'}">${nums}</span>${isJi ? ' <span style="color:#27ae60;font-size:11px">吉</span>' : ''}
 </div>`;
     }
-    // 最佳吉数
+    // 最佳吉数（四柱综合得分）
     const bestHtml = r.best.map(n => {
-      const luck = r.number_luck[n] || '';
       const w = Object.keys(r.groups).find(k => r.groups[k].includes(n));
+      const d = r.best_detail.find(x => x.n === n);
       return `<div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:10px;padding:10px;text-align:center;min-width:70px">
   <div style="font-size:24px;font-weight:bold;color:#5a3d2b">${n}</div>
   <div style="font-size:11px;color:#8a6d4b">${w}</div>
-  <div style="font-size:10px;color:#999;margin-top:2px">${luck.slice(0,10)}</div>
+  <div style="font-size:10px;color:#e67e22;margin-top:2px;font-weight:bold">${d ? d.score + '分' : ''}</div>
 </div>`;
     }).join('');
     // 五行强弱排行条
@@ -1188,14 +1188,15 @@ ${rankHtml}
     const border = d.hit_best_sx ? '2px solid #e67e22' : '1px solid #e5d9c0';
     const bg = d.hit_best_sx ? 'linear-gradient(135deg,#fde9c8,#fce3b8)' : 'linear-gradient(135deg,#f5e6c8,#e8c987)';
     return `<div style="background:${bg};border:${border};border-radius:10px;padding:8px;text-align:center;min-width:72px">
-    <div style="font-size:22px;font-weight:bold;color:#5a3d2b">${d.n}</div>
+    <div style="font-size:22px;font-weight:bold;color:#5a3d2b">${d.n}<span style="font-size:9px;color:#8a6d4b"> ${d.score}分</span></div>
     <div style="font-size:10px;color:${wc}">${d.wuxing}·${d.shengxiao}${d.hit_best_sx ? ' <span style="color:#e67e22;font-weight:bold">双吉</span>' : ''}</div>
     <div style="font-size:9px;color:#8a6d4b;margin-top:2px">${d.tags.join(' ')}</div>
+    <div style="font-size:8px;color:#b0a284;margin-top:1px">${d.rels.map(r=>r).join('/')}</div>
   </div>`;
   }).join('')}
 </div>
-<span class="section">最佳吉数 TOP ${r.best.length}</span>
-<div style="font-size:11px;color:#999;margin-bottom:4px">按四柱五行强弱优先排序：八字最强五行 → 日主比和 → 生扶（印）→ 生肖/时辰五行，命中最佳生肖双吉加分，口彩仅微调。</div>
+<span class="section">最佳吉数 TOP ${r.best.length}（四柱综合得分）</span>
+<div style="font-size:11px;color:#999;margin-bottom:4px">候选 = 吉数并集 ∪ 四柱最强五行数字；得分 = 四柱五行分（最强60分，按名次×1.0/0.92/0.84/0.76/0.68）+ 与年/日/时支关系分（六合+12/三合+10/比和+8/普通+2/相冲-10/六害-8），完全由四柱算出，非口彩吉数。</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:11px;color:#999;margin-bottom:4px">按五行生扶合并（日主比和 + 生扶 + 当日/当年生肖五行 + 所选时辰），与生肖对应数是两套体系。</div>
