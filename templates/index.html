@@ -1176,7 +1176,7 @@ ${rankHtml}
     <div style="font-size:13px;font-weight:bold;color:${cfg.fg};margin-bottom:3px">${g}（${list.length}个）</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
       ${list.map(x => `<div style="background:${cfg.bg};border:1px solid ${cfg.bd};border-radius:8px;padding:5px 10px;font-size:13px;color:#5a3d2b">
-        <b>${x.shengxiao}</b>（${x.wuxing}）<span style="font-size:10px;color:${cfg.fg}">${x.source}</span><div style="font-size:10px;color:#999;margin-top:2px">${x.numbers.join(' ')}</div>
+        <b>${x.shengxiao}</b>（${x.wuxing}）<span style="font-size:10px;color:${cfg.fg}">${x.source}</span><div style="font-size:10px;color:#999;margin-top:2px">${x.numbers_wuxing.join(' ')}</div>
       </div>`).join('')}
     </div></div>`;
   }).join('')}
@@ -1239,7 +1239,7 @@ ${Object.keys(r.sx_number_map).map(zhi => {
   const isYear = (zhi === r.year_ganzhi[1]);
   return `<div style="display:flex;align-items:center;margin:4px 0;font-size:13px;padding:3px 6px;border-radius:5px;${(isDay||isYear)?'background:#f5efe0':''}">
   <span style="width:88px;font-weight:bold;color:#5a3d2b">${zhi}（${item.shengxiao}-${item.wuxing}）</span>
-  <span style="flex:1;color:#666">${item.numbers.join(' ')}</span>
+  <span style="flex:1;color:#666">${item.numbers_wuxing.join(' ')}</span>
   ${isDay ? '<span style="color:#e67e22;font-size:11px;font-weight:bold">当日</span>' : ''}
   ${isYear ? '<span style="color:#2471a3;font-size:11px;font-weight:bold">当年</span>' : ''}
 </div>`;

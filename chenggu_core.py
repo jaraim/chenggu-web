@@ -1841,18 +1841,21 @@ def qigua(n1, n2, n3):
 # ===================== 十二、数字五行与当日吉数 =====================
 
 # 河图数理：个位数五行（1/6水、2/7火、3/8木、4/9金、5/0土）
+# 1-49 逐数字五行（生肖六合彩五行表）
+# 金：4,5,12,13,26,27,34,35,42,43　水：1,14,15,22,23,30,31,44,45
+# 木：8,9,16,17,24,25,38,39,46,47　火：2,3,10,11,18,19,32,33,40,41,48,49　土：6,7,20,21,28,29,36,37
+NUMBER_WUXING = {
+    1: '水', 2: '火', 3: '火', 4: '金', 5: '金', 6: '土', 7: '土', 8: '木', 9: '木', 10: '火',
+    11: '火', 12: '金', 13: '金', 14: '水', 15: '水', 16: '木', 17: '木', 18: '火', 19: '火', 20: '土',
+    21: '土', 22: '水', 23: '水', 24: '木', 25: '木', 26: '金', 27: '金', 28: '土', 29: '土', 30: '水',
+    31: '水', 32: '火', 33: '火', 34: '金', 35: '金', 36: '土', 37: '土', 38: '木', 39: '木', 40: '火',
+    41: '火', 42: '金', 43: '金', 44: '水', 45: '水', 46: '木', 47: '木', 48: '火', 49: '火',
+}
+
+
 def get_number_wuxing(n):
-    """返回数字 n 的五行属性（按河图个位数数理）。"""
-    m = n % 10
-    if m in (1, 6):
-        return '水'
-    if m in (2, 7):
-        return '火'
-    if m in (3, 8):
-        return '木'
-    if m in (4, 9):
-        return '金'
-    return '土'  # 5、0
+    """返回数字 n 的五行属性（逐数字五行表）。"""
+    return NUMBER_WUXING.get(n, '水')
 
 
 def number_groups():
@@ -1864,7 +1867,7 @@ def number_groups():
 
 
 def shengxiao_number_map():
-    """十二生肖（地支）对应的1-49数字及五行。
+    """十二生肖（地支）对应的1-49数字及逐数五行。
     规律：数字 n 归属地支 index=(7-n)%12（子丑寅卯辰巳午未申酉戌亥）。"""
     m = {}
     for n in range(1, 50):
@@ -1873,6 +1876,7 @@ def shengxiao_number_map():
     return {
         zhi: {
             'numbers': m[zhi],
+            'numbers_wuxing': ['{}{}'.format(n, NUMBER_WUXING[n]) for n in m[zhi]],
             'wuxing': DIZHI_WUXING[zhi],
             'shengxiao': SHENGXIAO_NAME[zhi],
         }
@@ -2164,6 +2168,7 @@ def lucky_numbers(year, month, day, shichen=None):
             'zhi': zhi, 'shengxiao': SHENGXIAO_NAME[zhi],
             'wuxing': DIZHI_WUXING[zhi],
             'numbers': sx_map_now[zhi]['numbers'],
+            'numbers_wuxing': sx_map_now[zhi]['numbers_wuxing'],
         }
         if zhi in best_zhi:
             src = next((s['source'] for s in best_sx if s['zhi'] == zhi), '六合/三合')
