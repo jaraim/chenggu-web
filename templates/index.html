@@ -1115,7 +1115,8 @@ async function doLucky() {
     el.innerHTML = `<div class="title">${r.date} · 当日五行强弱</div>
 <div style="background:#faf6ee;border-radius:8px;padding:15px;text-align:center">
   <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）　当月令旺：<b style="color:#8a6d4b">${r.strength.wang}</b></div>
-  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　生肖五行：<b style="color:#8a6d4b">${r.shengxiao_wuxing}</b></div>
+  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　当日生肖：<b style="color:#8a6d4b">${r.shengxiao}（${r.shengxiao_wuxing}）</b></div>
+  <div style="font-size:14px;color:#666;margin-top:4px">当年：<b>${r.year_ganzhi}年</b>（${r.year_shengxiao}年 · 五行属<b style="color:#8a6d4b">${r.year_wuxing}</b>）</div>
 </div>
 <span class="section">当日最强五行</span>
 <div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:12px;padding:18px;text-align:center;margin:8px 0">
@@ -1129,7 +1130,9 @@ ${rankHtml}
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.ji_numbers.map(n=>`<span style="display:inline-block;background:#f0e8d8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#5a3d2b">${n}</span>`).join('')}</div>
-<span class="section">生肖吉数（${r.shengxiao}属${r.shengxiao_wuxing}）</span>
+<span class="section">当年生肖吉数（${r.year_shengxiao}属${r.year_wuxing}）</span>
+<div style="font-size:15px;margin:8px 0;line-height:1.9">${r.year_ji.map(n=>`<span style="display:inline-block;background:#e8eef0;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#2471a3">${n}</span>`).join('')}</div>
+<span class="section">当日生肖吉数（${r.shengxiao}属${r.shengxiao_wuxing}）</span>
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.sx_ji.map(n=>`<span style="display:inline-block;background:#e8f0e8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#2e8b57">${n}</span>`).join('')}</div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
