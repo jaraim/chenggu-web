@@ -1164,6 +1164,7 @@ ${rankHtml}
 </div>
 <div style="font-size:12px;color:#999;margin-bottom:6px">最佳生肖 = 当日生肖六合/三合 ∪ 当年生肖六合/三合，六合优先。命中最佳生肖的数字为<b style="color:#e67e22">双吉</b>。</div>
 <span class="section">生肖三等分级（最佳 / 中 / 差）</span>
+<div style="font-size:11px;color:#999;margin-bottom:4px">卡片内数字为该生肖的<b>固定对应数（对照表）</b>，不是今日推荐；今日吉数请看下方「最佳数字」「最佳吉数 TOP」「全部吉数」。</div>
 <div style="margin:8px 0">
   ${['最佳','中','差'].map(g => {
     const list = r.shengxiao_grade.filter(x => x.grade === g);
@@ -1195,6 +1196,7 @@ ${rankHtml}
 <span class="section">最佳吉数 TOP ${r.best.length}</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
+<div style="font-size:11px;color:#999;margin-bottom:4px">按五行生扶合并（日主比和 + 生扶 + 当日/当年生肖五行 + 所选时辰），与生肖对应数是两套体系。</div>
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.ji_numbers.map(n=>`<span style="display:inline-block;background:#f0e8d8;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#5a3d2b">${n}</span>`).join('')}</div>
 <span class="section">当年生肖吉数（${r.year_shengxiao}属${r.year_wuxing}）</span>
 <div style="font-size:15px;margin:8px 0;line-height:1.9">${r.year_ji.map(n=>`<span style="display:inline-block;background:#e8eef0;border-radius:5px;padding:2px 8px;margin:2px;font-weight:bold;color:#2471a3">${n}</span>`).join('')}</div>
@@ -1226,7 +1228,7 @@ ${rankHtml}
 </div>
 <span class="section">1-49五行分组</span>
 ${groupsHtml}
-<span class="section">十二生肖数字五行对照</span>
+<span class="section">十二生肖数字五行对照（固定对应，非今日吉数）</span>
 <div style="margin:8px 0">
 ${Object.keys(r.sx_number_map).map(zhi => {
   const item = r.sx_number_map[zhi];
