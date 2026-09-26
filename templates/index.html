@@ -1136,14 +1136,15 @@ async function doLucky() {
 </div>`;
     }).join('');
     const strongNums = r.strength.strongest_numbers.join(' ');
-    el.innerHTML = `<div class="title">${r.date} · 当日五行强弱</div>
+    const p4 = r.strength.pillars;
+    el.innerHTML = `<div class="title">${r.date} · 四柱五行强弱（年/月/日/时）</div>
 <div style="background:#faf6ee;border-radius:8px;padding:15px;text-align:center">
-  <div style="font-size:15px;color:#5a3d2b">日柱：<b>${r.ganzhi}</b>（${r.shengxiao}日）　当月令旺：<b style="color:#8a6d4b">${r.strength.wang}</b></div>
-  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　当日生肖：<b style="color:#8a6d4b">${r.shengxiao}（${r.shengxiao_wuxing}）</b></div>
+  <div style="font-size:15px;color:#5a3d2b">八字四柱：<b>${p4[0]}</b>年 · <b>${p4[1]}</b>月 · <b>${p4[2]}</b>日（${r.shengxiao}日） · <b>${p4[3] || '未选时辰'}</b></div>
+  <div style="font-size:14px;color:#666;margin-top:6px">日主五行：<b style="color:#8a6d4b">${r.day_wuxing}</b>　当日生肖：<b style="color:#8a6d4b">${r.shengxiao}（${r.shengxiao_wuxing}）</b>　月令旺：<b style="color:#8a6d4b">${r.strength.wang}</b></div>
   <div style="font-size:14px;color:#666;margin-top:4px">当年：<b>${r.year_ganzhi}年</b>（${r.year_shengxiao}年 · 五行属<b style="color:#8a6d4b">${r.year_wuxing}</b>）</div>
   ${r.shichen_info ? `<div style="font-size:14px;color:#666;margin-top:4px">时柱：<b>${r.shichen_info.ganzhi}</b>（${r.shichen_info.shichen}时 ${r.shichen_info.time} · ${r.shichen_info.shengxiao}属<b style="color:#8a6d4b">${r.shichen_info.zhi_wuxing}</b>）</div>` : ''}
 </div>
-<span class="section">当日最强五行</span>
+<span class="section">四柱最强五行</span>
 <div style="background:linear-gradient(135deg,#f5e6c8,#e8c987);border-radius:12px;padding:18px;text-align:center;margin:8px 0">
   <div style="font-size:36px;font-weight:bold;color:#5a3d2b">${r.strength.strongest} 五行最旺</div>
   <div style="font-size:20px;color:#8a6d4b;margin-top:6px;letter-spacing:2px">${strongNums}</div>
@@ -1151,7 +1152,7 @@ async function doLucky() {
 </div>
 <span class="section">五行强弱排行</span>
 ${rankHtml}
-<span class="section">最佳生肖（当日×当年关联）</span>
+<span class="section">最佳生肖（八字最强五行 + 当日×当年×时辰关联）</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
   ${r.best_sx.map((s,i) => {
     const wc = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'}[s.wuxing];
@@ -1162,7 +1163,7 @@ ${rankHtml}
   </div>`;
   }).join('')}
 </div>
-<div style="font-size:12px;color:#999;margin-bottom:6px">最佳生肖 = 当日生肖六合/三合 ∪ 当年生肖六合/三合，六合优先。命中最佳生肖的数字为<b style="color:#e67e22">双吉</b>。</div>
+<div style="font-size:12px;color:#999;margin-bottom:6px">最佳生肖 = 八字（年/月/日/时）最强五行生肖优先，再叠加当日/当年/时辰的六合与三合。命中最佳生肖的数字为<b style="color:#e67e22">双吉</b>。</div>
 <span class="section">生肖三等分级（最佳 / 中 / 差）</span>
 <div style="font-size:11px;color:#999;margin-bottom:4px">卡片内数字为该生肖的<b>固定对应数（对照表）</b>，不是今日推荐；今日吉数请看下方「最佳数字」「最佳吉数 TOP」「全部吉数」。</div>
 <div style="margin:8px 0">
@@ -1194,6 +1195,7 @@ ${rankHtml}
   }).join('')}
 </div>
 <span class="section">最佳吉数 TOP ${r.best.length}</span>
+<div style="font-size:11px;color:#999;margin-bottom:4px">按四柱五行强弱优先排序：八字最强五行 → 日主比和 → 生扶（印）→ 生肖/时辰五行，命中最佳生肖双吉加分，口彩仅微调。</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:11px;color:#999;margin-bottom:4px">按五行生扶合并（日主比和 + 生扶 + 当日/当年生肖五行 + 所选时辰），与生肖对应数是两套体系。</div>
