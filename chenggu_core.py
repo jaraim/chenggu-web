@@ -1912,6 +1912,54 @@ def lucky_numbers(year, month, day):
     # 最佳吉数：从40以下选取（40+谐音均忌讳），避开个位4
     best = sorted([n for n in ji_numbers if n < 40], key=lambda n: (-luck_rank(n), n))[:8]
 
+    # ===== 关联分析：最佳生肖（当日+当年六合/三合并集，六合优先） =====
+    day_ch = shengxiao_chonghe(day_zhi)
+    year_ch = shengxiao_chonghe(year_zhi)
+    best_sx = []
+    seen_zhi = set()
+
+    def _add_sx(zhi, source, weight):
+        if zhi and zhi not in seen_zhi:
+            seen_zhi.add(zhi)
+            best_sx.append({
+                'zhi': zhi, 'shengxiao': SHENGXIAO_NAME[zhi],
+                'wuxing': DIZHI_WUXING[zhi], 'source': source, 'weight': weight,
+            })
+
+    if day_ch['liuhe']:
+        _add_sx(day_ch['liuhe']['zhi'], '当日六合', 4)
+    for x in day_ch['sanhe']:
+        _add_sx(x['zhi'], '当日三合', 3)
+    if year_ch['liuhe']:
+        _add_sx(year_ch['liuhe']['zhi'], '当年六合', 2)
+    for x in year_ch['sanhe']:
+        _add_sx(x['zhi'], '当年三合', 1)
+    best_sx.sort(key=lambda x: -x['weight'])
+
+    # ===== 关联分析：最佳数字（标注五行/所属生肖/关联维度/是否命中最佳生肖） =====
+    strongest_numbers = set(strength['strongest_numbers'])
+    zhu_set, sx_set, year_set = set(zhu_ji), set(sx_ji), set(year_ji)
+    best_sx_zhi = {x['zhi'] for x in best_sx}
+    best_detail = []
+    for n in best:
+        zhi = DIZHI[(n + 5) % 12]          # 数字归属生肖（对照表规则）
+        sx = SHENGXIAO_NAME[zhi]
+        tags = []
+        if n in strongest_numbers:
+            tags.append(f'最强{strength["strongest"]}')
+        if n in zhu_set:
+            tags.append(f'日主{day_wuxing}')
+        if n in sx_set:
+            tags.append(f'当日{shengxiao}{shengxiao_wuxing}')
+        if n in year_set:
+            tags.append(f'当年{year_shengxiao}{year_wuxing}')
+        best_detail.append({
+            'n': n, 'zhi': zhi, 'shengxiao': sx,
+            'wuxing': get_number_wuxing(n),
+            'tags': tags, 'hit_best_sx': zhi in best_sx_zhi,
+            'luck': NUMBER_LUCK.get(n, ''),
+        })
+
     return {
         'date': f'{year}年{month}月{day}日',
         'ganzhi': gz, 'shengxiao': shengxiao,
@@ -1919,8 +1967,10 @@ def lucky_numbers(year, month, day):
         'year_ganzhi': year_gz,
         'year_shengxiao': year_shengxiao,
         'year_wuxing': year_wuxing,
-        'day_chonghe': shengxiao_chonghe(day_zhi),      # 当日生肖冲合
-        'year_chonghe': shengxiao_chonghe(year_zhi),    # 当年生肖冲合
+        'day_chonghe': day_ch,              # 当日生肖冲合
+        'year_chonghe': year_ch,            # 当年生肖冲合
+        'best_sx': best_sx,                 # 最佳生肖（关联分析）
+        'best_detail': best_detail,         # 最佳数字（带关联标注）
         'shichen': shichen_jixiong(day_zhi, day_gan),   # 当日十二时辰吉凶
         'day_wuxing': day_wuxing,
         'sheng_wo': sheng_wo,
@@ -1939,8 +1989,8 @@ def lucky_numbers(year, month, day):
         'tips': [
             f'当日日柱为{gz}（{shengxiao}日），日主五行属{day_wuxing}；当年为{year_gz}年（{year_shengxiao}年），五行属{year_wuxing}',
             f'当日最强五行为{strength["strongest"]}，其对应数字为最旺之数',
-            f'比和{day_wuxing}、生扶{sheng_wo}、生肖{shengxiao_wuxing}与当年{year_shengxiao}{year_wuxing}之数为吉',
-            f'克制日主的{ke_wo}属性数字当日宜谨慎使用',
+            f'最佳生肖：{shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])}；当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
+            f'数字中命中最佳生肖者为双吉，优先选用',
             '以上仅供参考娱乐，不构成任何投注建议',
         ],
     }

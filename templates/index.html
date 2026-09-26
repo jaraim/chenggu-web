@@ -1126,6 +1126,31 @@ async function doLucky() {
 </div>
 <span class="section">五行强弱排行</span>
 ${rankHtml}
+<span class="section">最佳生肖（当日×当年关联）</span>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+  ${r.best_sx.map((s,i) => {
+    const wc = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'}[s.wuxing];
+    return `<div style="background:${i===0?'linear-gradient(135deg,#fde9c8,#f5c987)':'#fff'};border:1px solid #e5d9c0;border-radius:10px;padding:8px 12px;text-align:center;min-width:88px">
+    <div style="font-size:18px;font-weight:bold;color:#5a3d2b">${s.shengxiao}${i===0?' ★':''}</div>
+    <div style="font-size:11px;color:${wc}">${s.wuxing}</div>
+    <div style="font-size:10px;color:#8a6d4b">${s.source}</div>
+  </div>`;
+  }).join('')}
+</div>
+<div style="font-size:12px;color:#999;margin-bottom:6px">最佳生肖 = 当日生肖六合/三合 ∪ 当年生肖六合/三合，六合优先。命中最佳生肖的数字为<b style="color:#e67e22">双吉</b>。</div>
+<span class="section">最佳数字 · 综合关联</span>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+  ${r.best_detail.map(d => {
+    const wc = {金:'#c9a227', 木:'#2e8b57', 水:'#2980b9', 火:'#c0392b', 土:'#8d6e63'}[d.wuxing];
+    const border = d.hit_best_sx ? '2px solid #e67e22' : '1px solid #e5d9c0';
+    const bg = d.hit_best_sx ? 'linear-gradient(135deg,#fde9c8,#fce3b8)' : 'linear-gradient(135deg,#f5e6c8,#e8c987)';
+    return `<div style="background:${bg};border:${border};border-radius:10px;padding:8px;text-align:center;min-width:72px">
+    <div style="font-size:22px;font-weight:bold;color:#5a3d2b">${d.n}</div>
+    <div style="font-size:10px;color:${wc}">${d.wuxing}·${d.shengxiao}${d.hit_best_sx ? ' <span style="color:#e67e22;font-weight:bold">双吉</span>' : ''}</div>
+    <div style="font-size:9px;color:#8a6d4b;margin-top:2px">${d.tags.join(' ')}</div>
+  </div>`;
+  }).join('')}
+</div>
 <span class="section">最佳吉数 TOP ${r.best.length}</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
