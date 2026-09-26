@@ -1159,6 +1159,22 @@ ${rankHtml}
   }).join('')}
 </div>
 <div style="font-size:12px;color:#999;margin-bottom:6px">最佳生肖 = 当日生肖六合/三合 ∪ 当年生肖六合/三合，六合优先。命中最佳生肖的数字为<b style="color:#e67e22">双吉</b>。</div>
+<span class="section">生肖三等分级（最佳 / 中 / 差）</span>
+<div style="margin:8px 0">
+  ${['最佳','中','差'].map(g => {
+    const list = r.shengxiao_grade.filter(x => x.grade === g);
+    const cfg = g === '最佳' ? {bg:'#e8f0e8', bd:'#2e8b57', fg:'#2e8b57'}
+             : g === '差' ? {bg:'#fbeae8', bd:'#c0392b', fg:'#c0392b'}
+             : {bg:'#f5f0e6', bd:'#a08c5a', fg:'#a08c5a'};
+    return `<div style="margin:6px 0">
+    <div style="font-size:13px;font-weight:bold;color:${cfg.fg};margin-bottom:3px">${g}（${list.length}个）</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${list.map(x => `<div style="background:${cfg.bg};border:1px solid ${cfg.bd};border-radius:8px;padding:5px 10px;font-size:13px;color:#5a3d2b">
+        <b>${x.shengxiao}</b>（${x.wuxing}）<span style="font-size:10px;color:${cfg.fg}">${x.source}</span><div style="font-size:10px;color:#999;margin-top:2px">${x.numbers.join(' ')}</div>
+      </div>`).join('')}
+    </div></div>`;
+  }).join('')}
+</div>
 <span class="section">最佳数字 · 综合关联</span>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
   ${r.best_detail.map(d => {

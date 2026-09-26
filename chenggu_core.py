@@ -948,6 +948,9 @@ SHENGXIAO_SANHE = [
     {'zhi': ['巳', '酉', '丑'], 'ju': '金局'},
     {'zhi': ['亥', '卯', '未'], 'ju': '木局'},
 ]
+# 生肖六害：子未、丑午、寅巳、卯辰、申亥、酉戌
+SHENGXIAO_LIUHAI = {'子': '未', '丑': '午', '寅': '巳', '卯': '辰', '辰': '卯', '巳': '寅',
+                    '午': '丑', '未': '子', '申': '亥', '酉': '戌', '戌': '酉', '亥': '申'}
 
 
 def shengxiao_chonghe(zhi):
@@ -1965,6 +1968,52 @@ def lucky_numbers(year, month, day, shichen=None):
             _add_sx(x['zhi'], f'{shichen_info["shichen"]}时三合', 1)
     best_sx.sort(key=lambda x: -x['weight'])
 
+    # ===== 生肖三等分级：最佳（六合/三合）/ 中（无冲无合）/ 差（相冲+六害） =====
+    best_zhi = {x['zhi'] for x in best_sx}
+    bad_zhi = {}
+    def _mark_bad(zhi, source):
+        if zhi and zhi not in bad_zhi:
+            bad_zhi[zhi] = source
+    # 相冲
+    if day_ch['chong']:
+        _mark_bad(day_ch['chong']['zhi'], f'冲当日{shengxiao}')
+    if year_ch['chong']:
+        _mark_bad(year_ch['chong']['zhi'], f'冲当年{year_shengxiao}')
+    if shichen_ch and shichen_ch['chong']:
+        _mark_bad(shichen_ch['chong']['zhi'], f'冲{shichen_info["shengxiao"]}时')
+    # 六害
+    sx_map_now = shengxiao_number_map()
+    for zhi in DIZHI:
+        hai = SHENGXIAO_LIUHAI[zhi]
+        sources = []
+        if hai == day_zhi:
+            sources.append(f'害当日{shengxiao}')
+        if hai == year_zhi:
+            sources.append(f'害当年{year_shengxiao}')
+        if shichen_info and hai == shichen_info['shichen']:
+            sources.append(f'害{shichen_info["shengxiao"]}时')
+        if sources and zhi not in bad_zhi:
+            bad_zhi[zhi] = '、'.join(sources)
+
+    shengxiao_grade = []
+    for zhi in DIZHI:
+        item = {
+            'zhi': zhi, 'shengxiao': SHENGXIAO_NAME[zhi],
+            'wuxing': DIZHI_WUXING[zhi],
+            'numbers': sx_map_now[zhi]['numbers'],
+        }
+        if zhi in best_zhi:
+            src = next((s['source'] for s in best_sx if s['zhi'] == zhi), '六合/三合')
+            item['grade'] = '最佳'
+            item['source'] = src
+        elif zhi in bad_zhi:
+            item['grade'] = '差'
+            item['source'] = bad_zhi[zhi]
+        else:
+            item['grade'] = '中'
+            item['source'] = '无冲无合'
+        shengxiao_grade.append(item)
+
     # ===== 关联分析：最佳数字（标注五行/所属生肖/关联维度/是否命中最佳生肖） =====
     strongest_numbers = set(strength['strongest_numbers'])
     zhu_set, sx_set, year_set = set(zhu_ji), set(sx_ji), set(year_ji)
@@ -2014,6 +2063,7 @@ def lucky_numbers(year, month, day, shichen=None):
         'day_chonghe': day_ch,              # 当日生肖冲合
         'year_chonghe': year_ch,            # 当年生肖冲合
         'best_sx': best_sx,                 # 最佳生肖（关联分析）
+        'shengxiao_grade': shengxiao_grade, # 十二生肖三等分级（最佳/中/差）
         'best_detail': best_detail,         # 最佳数字（带关联标注）
         'shichen_info': shichen_info,       # 所选时辰信息（时柱干支/五行/生肖），未选为None
         'shichen_ch': shichen_ch,           # 所选时辰的生肖冲合
