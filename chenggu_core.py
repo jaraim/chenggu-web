@@ -2132,8 +2132,14 @@ def lucky_numbers(year, month, day, shichen=None):
         number_rels[n] = rels
         return round(s, 1)
 
-    # 最佳吉数TOP：候选 = 吉数并集 ∪ 四柱最强五行数字，按四柱综合得分排序（非口彩吉数）
-    best = sorted(set(ji_numbers) | set(strongest_numbers), key=lambda n: (-number_score(n), n))[:8]
+    # 生肖对应数字表（数字归属生肖：index=(7-n)%12）
+    sx_map_now = shengxiao_number_map()
+
+    # 最佳吉数TOP：候选 = 当年生肖 + 当日生肖 + 最佳生肖 的对应数字（生肖对照表），按四柱综合得分排序
+    cand = set(sx_map_now[year_zhi]['numbers']) | set(sx_map_now[day_zhi]['numbers'])
+    for _s in best_sx:
+        cand |= set(sx_map_now[_s['zhi']]['numbers'])
+    best = sorted(cand, key=lambda n: (-number_score(n), n))[:8]
 
     # ===== 生肖三等分级：最佳（六合/三合）/ 中（无冲无合）/ 差（相冲+六害） =====
     best_zhi = {x['zhi'] for x in best_sx}
@@ -2149,7 +2155,6 @@ def lucky_numbers(year, month, day, shichen=None):
     if shichen_ch and shichen_ch['chong']:
         _mark_bad(shichen_ch['chong']['zhi'], f'冲{shichen_info["shengxiao"]}时')
     # 六害
-    sx_map_now = shengxiao_number_map()
     for zhi in DIZHI:
         hai = SHENGXIAO_LIUHAI[zhi]
         sources = []
