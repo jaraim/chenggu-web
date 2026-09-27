@@ -1119,6 +1119,7 @@ async function doLucky() {
   <div style="font-size:24px;font-weight:bold;color:#5a3d2b">${n}</div>
   <div style="font-size:11px;color:#8a6d4b">${w}·${d ? d.shengxiao : ''}</div>
   <div style="font-size:10px;color:#e67e22;margin-top:2px;font-weight:bold">${d ? d.score + '分' : ''}</div>
+  ${d && d.guaranteed ? '<div style="font-size:9px;color:#c0392b;margin-top:1px">保底</div>' : ''}
 </div>`;
     }).join('');
     // 五行强弱排行条
@@ -1211,7 +1212,7 @@ ${analysisHtml}
   }).join('')}
 </div>
 <span class="section">最佳吉数 TOP ${r.best.length}（四柱综合得分）</span>
-<div style="font-size:11px;color:#999;margin-bottom:4px">候选 = 当年生肖 ∪ 当日生肖 ∪ 最佳生肖 的对应数字（生肖对照表）；<b>数字按所属生肖的五行计分</b>（鼠猪=水、猴鸡=金…，最佳生肖水则其数字全按水算），得分 = 生肖五行分（最强60分，按名次×1.0/0.92/0.84/0.76/0.68），纯五行排序。</div>
+<div style="font-size:11px;color:#999;margin-bottom:4px">候选 = 当年生肖 ∪ 当日生肖 ∪ 最佳生肖 的对应数字（生肖对照表）；<b>每个最佳生肖保底 1 个数字</b>（六合/三合/最强五行，取该生肖得分最高者，标"保底"），其余槽位按生肖五行分补齐（鼠猪=水、猴鸡=金…，最强60分，按名次×1.0/0.92/0.84/0.76/0.68）。</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:11px;color:#999;margin-bottom:4px">按五行生扶合并（日主比和 + 生扶 + 当日/当年生肖五行 + 所选时辰），与生肖对应数是两套体系。</div>
