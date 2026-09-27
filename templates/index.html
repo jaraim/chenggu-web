@@ -1146,7 +1146,8 @@ async function doLucky() {
 <div style="background:#fdf9f0;border:1px solid #e5d9c0;border-radius:12px;padding:14px;margin:8px 0;font-size:13px;line-height:1.9">
   <div style="font-weight:bold;color:#5a3d2b;margin-bottom:6px">今日关联分析</div>
   <div>四柱 <b>${p4[0]}</b> · <b>${p4[1]}</b> · <b>${p4[2]}</b> → 最强五行 <b style="color:#c9a227">${r.strength.strongest}</b>（排行分最高）</div>
-  <div>最强${r.strength.strongest}五行 → 属${r.strength.strongest}生肖：<b>${wuxSx(r.strength.strongest)}</b>；对应数字 <b>${r.strongest_sx_numbers.join(' ')}</b>（按生肖五行计分）</div>
+  <div>最强${r.strength.strongest}五行 → 属${r.strength.strongest}生肖：<b>${wuxSx(r.strength.strongest)}</b>；对应数字 <b>${r.strongest_sx_numbers.join(' ')}</b>（属${r.strength.strongest}生肖数字）</div>
+  <div style="color:#e67e22">今日推荐（保底+当年/当日吉数）：<b>${r.best.slice(0,8).join(' ')}</b>（${r.best_detail.slice(0,8).map(d=>d.shengxiao).filter((v,i,a)=>a.indexOf(v)===i).join('、')}）</div>
   <div>当日${r.shengxiao}关联：六合 <b style="color:#27ae60">${chfmt(r.day_chonghe.liuhe)}</b> ｜ 三合 <b style="color:#27ae60">${sanfmt(r.day_chonghe.sanhe)}</b> ｜ 相冲 <b style="color:#e74c3c">${chfmt(r.day_chonghe.chong)}</b></div>
   <div>当年${r.year_shengxiao}关联：六合 <b style="color:#27ae60">${chfmt(r.year_chonghe.liuhe)}</b> ｜ 三合 <b style="color:#27ae60">${sanfmt(r.year_chonghe.sanhe)}</b> ｜ 相冲 <b style="color:#e74c3c">${chfmt(r.year_chonghe.chong)}</b></div>
   ${r.shichen_info ? `<div>所择${r.shichen_info.shichen}时关联：六合 <b style="color:#27ae60">${chfmt(r.shichen_ch.liuhe)}</b> ｜ 三合 <b style="color:#27ae60">${sanfmt(r.shichen_ch.sanhe)}</b> ｜ 相冲 <b style="color:#e74c3c">${chfmt(r.shichen_ch.chong)}</b></div>` : ''}
