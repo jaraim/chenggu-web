@@ -2104,7 +2104,22 @@ def lucky_numbers(year, month, day, shichen=None):
     cand = set(sx_map_now[year_zhi]['numbers']) | set(sx_map_now[day_zhi]['numbers'])
     for _s in best_sx:
         cand |= set(sx_map_now[_s['zhi']]['numbers'])
-    # 保底：每个最佳生肖至少 1 个数字进 TOP8（取该生肖数字中四柱得分最高者，同分取小）
+    # 保底：每个最佳生肖至少 1 个数字进 TOP8
+    # 组内优先选'数字自身五行'与当年/当日五行同气者（与生肖吉数口径一致），再按数字五行分，同分取小
+    year_wx_now = DIZHI_WUXING[year_zhi]   # 当年五行（如马年=火）
+    day_wx_now = DIZHI_WUXING[day_zhi]     # 当日五行
+    def _numwx_score(n):
+        return round(scores[NUMBER_WUXING[n]] / max_score * 60 * _rank_discount[NUMBER_WUXING[n]], 1)
+    def _pick_guarantee(n):
+        w = NUMBER_WUXING[n]
+        prio = 0
+        if w == year_wx_now:
+            prio += 100   # 与当年五行同气（当年生肖吉数口径）
+        if w == day_wx_now:
+            prio += 40    # 与当日五行同气
+        if w == strength['strongest']:
+            prio += 10    # 与最强五行同气
+        return (-prio, -_numwx_score(n), n)
     best = []
     used = set()
     guaranteed = set()
@@ -2112,7 +2127,7 @@ def lucky_numbers(year, month, day, shichen=None):
         grp = [n for n in cand if DIZHI[(7 - n) % 12] == _s['zhi']]
         if not grp:
             continue
-        top = min(grp, key=lambda n: (-number_score(n), n))
+        top = min(grp, key=_pick_guarantee)
         best.append(top)
         used.add(top)
         guaranteed.add(top)
@@ -2255,7 +2270,7 @@ def lucky_numbers(year, month, day, shichen=None):
             f'八字四柱：{strength["pillars"][0]}年（{year_shengxiao}年）·{strength["pillars"][1]}月·{strength["pillars"][2]}日（{shengxiao}日）·{strength["pillars"][3] if strength["pillars"][3] else "未选时辰"}',
             f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），属{strength["strongest"]}生肖（{"、".join(x["shengxiao"] for z, x in shengxiao_number_map().items() if x["wuxing"] == strength["strongest"])}）对应数字为最旺之数',
             f'最佳生肖：八字最强{strength["strongest"]}五行生肖 + {shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])} + 当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
-            f'最佳数字按所属生肖五行计分（鼠猪水/猴鸡金…，最强60分按名次折扣），每个最佳生肖保底1个数字进TOP8，候选=当年+当日+最佳生肖数字',
+            f'最佳数字按所属生肖五行计分（鼠猪水/猴鸡金…，最强60分按名次折扣），每个最佳生肖保底1个数字（组内优先与当年/当日五行同气者），候选=当年+当日+最佳生肖数字',
             '以上仅供参考娱乐，不构成任何投注建议',
         ],
     }
