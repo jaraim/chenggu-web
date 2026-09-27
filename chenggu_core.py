@@ -2223,6 +2223,12 @@ def lucky_numbers(year, month, day, shichen=None):
     # 五行计分排行文字（兼容 Python 3.10：避免 f-string 嵌套同引号）
     _rank_score = '、'.join('{}{}分'.format(x['w'], x['score']) for x in strength['ranking'])
 
+    # 属最强五行生肖的数字（与最佳数字计分口径一致：生肖五行）
+    strongest_sx_numbers = sorted(set(
+        n for n in range(1, 50)
+        if DIZHI_WUXING[DIZHI[(7 - n) % 12]] == strength['strongest']
+    ))
+
     return {
         'date': f'{year}年{month}月{day}日',
         'ganzhi': gz, 'shengxiao': shengxiao,
@@ -2242,6 +2248,7 @@ def lucky_numbers(year, month, day, shichen=None):
         'sheng_wo': sheng_wo,
         'ke_wo': ke_wo,
         'strength': strength,        # 四柱五行强弱（含排行/最强/旺相休囚死/四柱）
+        'strongest_sx_numbers': strongest_sx_numbers,  # 属最强五行生肖的数字（与最佳数字计分口径一致）
         'zhu_ji': zhu_ji,           # 主吉数（日主比和）
         'ci_ji': ci_ji,             # 次吉数（日主生扶）
         'sx_ji': sx_ji,             # 当日生肖吉数
@@ -2254,7 +2261,7 @@ def lucky_numbers(year, month, day, shichen=None):
         'number_luck': NUMBER_LUCK,
         'tips': [
             f'八字四柱：{strength["pillars"][0]}年（{year_shengxiao}年）·{strength["pillars"][1]}月·{strength["pillars"][2]}日（{shengxiao}日）·{strength["pillars"][3] if strength["pillars"][3] else "未选时辰"}',
-            f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），最强五行对应数字为最旺之数',
+            f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），属{strength["strongest"]}生肖（{"、".join(x["shengxiao"] for z, x in shengxiao_number_map().items() if x["wuxing"] == strength["strongest"])}）对应数字为最旺之数',
             f'最佳生肖：八字最强{strength["strongest"]}五行生肖 + {shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])} + 当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
             f'最佳数字得分 = 生肖五行分（数字按所属生肖计分：鼠猪水/猴鸡金…，最强60分按比例）+ 与年/日/时支关系分（六合12/三合10/比和8/相冲-10/六害-8），非口彩吉数',
             '以上仅供参考娱乐，不构成任何投注建议',
