@@ -1207,12 +1207,11 @@ ${analysisHtml}
     <div style="font-size:22px;font-weight:bold;color:#5a3d2b">${d.n}<span style="font-size:9px;color:#8a6d4b"> ${d.score}分</span></div>
     <div style="font-size:10px;color:${wc}">${d.wuxing}·${d.shengxiao}${d.hit_best_sx ? ' <span style="color:#e67e22;font-weight:bold">双吉</span>' : ''}</div>
     <div style="font-size:9px;color:#8a6d4b;margin-top:2px">${d.tags.join(' ')}</div>
-    <div style="font-size:8px;color:#b0a284;margin-top:1px">${d.rels.map(r=>r).join('/')}</div>
   </div>`;
   }).join('')}
 </div>
 <span class="section">最佳吉数 TOP ${r.best.length}（四柱综合得分）</span>
-<div style="font-size:11px;color:#999;margin-bottom:4px">候选 = 当年生肖 ∪ 当日生肖 ∪ 最佳生肖 的对应数字（生肖对照表）；<b>数字按所属生肖的五行计分</b>（鼠猪=水、猴鸡=金…，即最佳生肖水则其数字全按水算），得分 = 生肖五行分（最强60分，按名次×1.0/0.92/0.84/0.76/0.68）+ 与年/日/时支关系分（六合+12/三合+10/比和+8/普通+2/相冲-10/六害-8）。</div>
+<div style="font-size:11px;color:#999;margin-bottom:4px">候选 = 当年生肖 ∪ 当日生肖 ∪ 最佳生肖 的对应数字（生肖对照表）；<b>数字按所属生肖的五行计分</b>（鼠猪=水、猴鸡=金…，最佳生肖水则其数字全按水算），得分 = 生肖五行分（最强60分，按名次×1.0/0.92/0.84/0.76/0.68），纯五行排序。</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">${bestHtml}</div>
 <span class="section">全部吉数（${r.ji_numbers.length}个）</span>
 <div style="font-size:11px;color:#999;margin-bottom:4px">按五行生扶合并（日主比和 + 生扶 + 当日/当年生肖五行 + 所选时辰），与生肖对应数是两套体系。</div>
