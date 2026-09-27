@@ -2133,15 +2133,16 @@ def lucky_numbers(year, month, day, shichen=None):
         guaranteed.add(top)
         if len(best) >= 8:
             break
-    # 剩余槽位按四柱五行分补
-    for n in sorted(cand, key=lambda n: (-number_score(n), n)):
-        if n not in used:
-            best.append(n)
-            used.add(n)
-        if len(best) >= 8:
-            break
-    # 展示按四柱得分降序（同分数字升序）
-    best = sorted(best[:8], key=lambda n: (-number_score(n), n))
+    # 最终排序：保底 > 当年生肖吉数 > 当日生肖吉数 > 生肖五行分（同分数字升序）
+    def _prio(n):
+        if n in guaranteed:
+            return 4
+        if n in year_ji:
+            return 3
+        if n in sx_ji:
+            return 2
+        return 1
+    best = sorted(cand, key=lambda n: (-_prio(n), -number_score(n), n))[:8]
 
     # ===== 生肖三等分级：最佳（六合/三合）/ 中（无冲无合）/ 差（相冲+六害） =====
     best_zhi = {x['zhi'] for x in best_sx}
@@ -2270,7 +2271,7 @@ def lucky_numbers(year, month, day, shichen=None):
             f'八字四柱：{strength["pillars"][0]}年（{year_shengxiao}年）·{strength["pillars"][1]}月·{strength["pillars"][2]}日（{shengxiao}日）·{strength["pillars"][3] if strength["pillars"][3] else "未选时辰"}',
             f'四柱五行最强为{strength["strongest"]}（计分排行：{_rank_score}），属{strength["strongest"]}生肖（{"、".join(x["shengxiao"] for z, x in shengxiao_number_map().items() if x["wuxing"] == strength["strongest"])}）对应数字为最旺之数',
             f'最佳生肖：八字最强{strength["strongest"]}五行生肖 + {shengxiao}日六合{day_ch["liuhe"]["shengxiao"] if day_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in day_ch["sanhe"])} + 当年{year_shengxiao}六合{year_ch["liuhe"]["shengxiao"] if year_ch["liuhe"] else "—"}、三合{"、".join(x["shengxiao"] for x in year_ch["sanhe"])}',
-            f'最佳数字按所属生肖五行计分（鼠猪水/猴鸡金…，最强60分按名次折扣），每个最佳生肖保底1个数字（组内优先与当年/当日五行同气者），候选=当年+当日+最佳生肖数字',
+            f'最佳数字排序：每个最佳生肖保底1个数字（组内优先与当年/当日五行同气者）＞ 当年生肖吉数 ＞ 当日生肖吉数 ＞ 生肖五行分（鼠猪水/猴鸡金…）',
             '以上仅供参考娱乐，不构成任何投注建议',
         ],
     }
